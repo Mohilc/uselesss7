@@ -115,10 +115,73 @@ class WallpaperService {
   }
 
   /**
-   * Downloads image if not already cached and saves as JPEG
+   * Generates a sleek, high-resolution offline bitmap wallpaper for a climate zone
+   * if network is unavailable or Unsplash download fails.
+   */
+   generateFallbackWallpaper(filePath, hexColor = '#0f172a') {
+    try {
+      const width = 640;
+      const height = 360;
+      const r = parseInt(hexColor.slice(1, 3), 16) || 15;
+      const g = parseInt(hexColor.slice(3, 5), 16) || 23;
+      const b = parseInt(hexColor.slice(5, 7), 16) || 42;
+
+      const rowPadding = (4 - ((width * 3) % 4)) % 4;
+      const rowSize = width * 3 + rowPadding;
+      const pixelDataSize = rowSize * height;
+      const fileSize = 54 + pixelDataSize;
+
+      const buffer = Buffer.alloc(fileSize);
+
+      // BMP Header
+      buffer.write('BM', 0);
+      buffer.writeUInt32LE(fileSize, 2);
+      buffer.writeUInt32LE(54, 10); // Offset to pixel data
+
+      // DIB Header
+      buffer.writeUInt32LE(40, 14); // DIB header size
+      buffer.writeInt32LE(width, 18);
+      buffer.writeInt32LE(height, 22);
+      buffer.writeUInt16LE(1, 26);  // Color planes
+      buffer.writeUInt16LE(24, 28); // 24 bpp
+      buffer.writeUInt32LE(0, 30);  // BI_RGB (uncompressed)
+      buffer.writeUInt32LE(pixelDataSize, 34);
+
+      // Fill pixels (BGR order) with vertical gradient
+      let offset = 54;
+      for (let y = 0; y < height; y++) {
+        const factor = 0.4 + (0.6 * (y / height));
+        const pr = Math.min(255, Math.floor(r * factor));
+        const pg = Math.min(255, Math.floor(g * factor));
+        const pb = Math.min(255, Math.floor(b * factor));
+
+        for (let x = 0; x < width; x++) {
+          buffer[offset++] = pb;
+          buffer[offset++] = pg;
+          buffer[offset++] = pr;
+        }
+        for (let p = 0; p < rowPadding; p++) {
+          buffer[offset++] = 0;
+        }
+      }
+
+      fs.writeFileSync(filePath, buffer);
+      return filePath;
+    } catch (err) {
+      console.warn('[WallpaperService] Fallback BMP generation failed:', err.message);
+      return null;
+    }
+  }
+
+  /**
+   * Downloads image if not already cached and saves as JPEG.
+   * If offline or download fails, generates a local high-res climate gradient.
    */
   async downloadWallpaper(zoneKey, url) {
+    const config = CLIMATE_WALLPAPERS[zoneKey] || CLIMATE_WALLPAPERS.NORMAL;
     const filePath = path.join(this.cacheDir, `wallpaper_climate_${zoneKey.toLowerCase()}.jpg`);
+    const bmpPath = path.join(this.cacheDir, `wallpaper_climate_${zoneKey.toLowerCase()}.bmp`);
+
     if (fs.existsSync(filePath)) {
       const stats = fs.statSync(filePath);
       if (stats.size > 5000) {
@@ -127,19 +190,22 @@ class WallpaperService {
     }
 
     try {
-      const res = await fetch(url);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
       if (!res.ok) throw new Error(`HTTP error ${res.status}`);
       const arrayBuffer = await res.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
       fs.writeFileSync(filePath, buffer);
       return filePath;
     } catch (err) {
-      console.warn(`[WallpaperService] Download failed for climate zone ${zoneKey}:`, err.message);
-      // If cached file exists despite size, use it
-      if (fs.existsSync(filePath)) {
+      console.warn(`[WallpaperService] Download failed for climate zone ${zoneKey} (${err.message}). Using high-fidelity offline fallback.`);
+      if (fs.existsSync(filePath) && fs.statSync(filePath).size > 1000) {
         return filePath;
       }
-      return null;
+      return this.generateFallbackWallpaper(bmpPath, config.color) || filePath;
     }
   }
 

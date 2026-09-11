@@ -117,17 +117,22 @@ export const simulate = (req, res) => {
       wifiConnected,
       wifiSsid,
       personality,
+      climate,
     } = req.body;
+
+    const isConnected = wifiConnected !== undefined
+      ? Boolean(wifiConnected)
+      : (req.body.connected !== undefined ? Boolean(req.body.connected) : undefined);
 
     if (enabled !== undefined) {
       temperatureService.setSimulation(enabled, temperature);
-      wifiService.setSimulation(enabled, wifiSignal, wifiConnected, wifiSsid);
+      wifiService.setSimulation(enabled, wifiSignal, isConnected, wifiSsid);
     } else {
       if (temperature !== undefined) {
         temperatureService.setSimulation(true, temperature);
       }
-      if (wifiSignal !== undefined || wifiConnected !== undefined || wifiSsid !== undefined) {
-        wifiService.setSimulation(true, wifiSignal, wifiConnected, wifiSsid);
+      if (wifiSignal !== undefined || isConnected !== undefined || wifiSsid !== undefined) {
+        wifiService.setSimulation(true, wifiSignal, isConnected, wifiSsid);
       }
     }
 

@@ -181,20 +181,63 @@ const Dashboard = () => {
 
   const handleApplyQuickMood = useCallback(async (item) => {
     try {
+      const climateKey = item.climate || 'SUNNY';
+      const moodKey = item.key || (climateKey === 'HOT' ? 'ANGRY' : climateKey === 'COLD' ? 'COLD' : climateKey === 'RAINY' ? 'SAD' : climateKey === 'STORM' ? 'LONELY' : 'HAPPY');
+      const tempVal = item.temp ?? 48;
+      const wifiVal = item.wifi ?? 85;
+      const connVal = item.connected ?? (wifiVal > 0);
+
+      const climateZone = tempVal > 84 ? 'CRITICAL' : tempVal > 74 ? 'HOT' : tempVal > 64 ? 'WARM' : tempVal > 54 ? 'NORMAL' : tempVal > 44 ? 'COOL' : tempVal > 30 ? 'COLD' : 'FREEZING';
+
+      // 1. Instant optimistic UI state update (0ms latency for seamless visual feedback)
+      setTelemetry((prev) => ({
+        ...prev,
+        timestamp: Date.now(),
+        temperature: {
+          ...prev?.temperature,
+          temperature: tempVal,
+          isSimulated: true,
+          status: tempVal >= 85 ? 'Critical' : tempVal >= 75 ? 'Hot' : tempVal >= 65 ? 'Warm' : 'Normal',
+        },
+        wifi: {
+          ...prev?.wifi,
+          signalStrength: wifiVal,
+          connected: connVal,
+          isSimulated: true,
+        },
+        mood: {
+          ...prev?.mood,
+          moodKey,
+          climateEffect: climateKey,
+          climateZone,
+        },
+      }));
+
+      // 2. Play acoustic transition immediately
       if (item.climate) {
         audioSynthesizer.playMoodTransition(item.climate, true);
+        audioSynthesizer.playClimateChangeSound(item.climate);
       }
+
+      // 3. Persist simulation on backend
       await setSimulation({
         enabled: true,
-        temperature: item.temp,
-        wifiSignal: item.wifi,
-        connected: item.wifi > 0,
+        temperature: tempVal,
+        wifiSignal: wifiVal,
+        wifiConnected: connVal,
+        connected: connVal,
       });
+
+      // 4. Synchronize real Windows desktop wallpaper immediately
+      if (isWallpaperSyncOn && tempVal != null) {
+        applyWindowsWallpaper(moodKey, null, tempVal).catch(() => {});
+      }
+
       refreshData();
     } catch (err) {
       console.error('Failed to apply quick mood:', err);
     }
-  }, [refreshData]);
+  }, [refreshData, isWallpaperSyncOn]);
 
   const handleResetHardware = useCallback(async () => {
     try {
@@ -312,6 +355,36 @@ const Dashboard = () => {
           onMinimize={() => window.electronAPI?.minimize?.()}
           onClose={() => window.electronAPI?.close?.()}
         />
+      </div>
+    );
+  }
+
+  // Desktop Screen Weather Overlay Mode (Click-through transparent weather across Windows screen)
+  if (currentMode === 'overlay') {
+    return (
+      <div className="w-screen h-screen bg-transparent overflow-hidden select-none relative pointer-events-none">
+        {/* Fullscreen Weather Particle Canvas */}
+        <ClimateEffect climate={currentMood.climateEffect} perfMode={perfMode} />
+
+        {/* Floating Controls HUD with mouse hover un-ignoring */}
+        <div
+          className="fixed top-4 right-4 z-50 glass-panel rounded-2xl p-2.5 border border-white/20 shadow-2xl flex items-center gap-2 bg-slate-950/85 backdrop-blur-xl pointer-events-auto"
+          onMouseEnter={() => window.electronAPI?.setIgnoreMouseEvents?.(false)}
+          onMouseLeave={() => window.electronAPI?.setIgnoreMouseEvents?.(true, { forward: true })}
+        >
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 text-xs font-bold text-slate-200">
+            <span>{currentMood.moodEmoji}</span>
+            <span className="uppercase tracking-wider font-mono text-[11px] text-indigo-300">
+              {currentMood.climateEffect}
+            </span>
+          </div>
+          <button
+            onClick={() => handleModeChange('dashboard')}
+            className="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-lg transition-all active:scale-95"
+          >
+            Exit Weather
+          </button>
+        </div>
       </div>
     );
   }
@@ -472,6 +545,7 @@ const Dashboard = () => {
         <footer className="pt-2 pb-1">
           <CyberDock
             currentMoodKey={currentMood.moodKey}
+            currentClimate={currentMood.climateEffect}
             personality={currentMood.personality}
             onPersonalityChange={handlePersonalityChange}
             onApplyQuickMood={handleApplyQuickMood}

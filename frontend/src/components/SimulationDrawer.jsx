@@ -120,6 +120,7 @@ const SimulationDrawer = ({ isSimulated, currentTemp, currentWifi, isConnected, 
         temperature: newTemp,
         wifiSignal: newWifi,
         wifiConnected: newConn,
+        connected: newConn,
       });
       setActive(simActive);
       if (onSync) onSync();
@@ -134,13 +135,29 @@ const SimulationDrawer = ({ isSimulated, currentTemp, currentWifi, isConnected, 
     setTemp(p.temp);
     setWifi(p.wifi);
     setConnected(p.connected);
-    audioSynthesizer.playMoodTransition(p.climate);
+    audioSynthesizer.playMoodTransition(p.climate, true);
+    audioSynthesizer.playClimateChangeSound(p.climate);
     applySimulation(true, p.temp, p.wifi, p.connected);
   };
 
   const handleTestClimateSound = (climateId) => {
     audioSynthesizer.setMuted(false);
     audioSynthesizer.playClimateChangeSound(climateId);
+    audioSynthesizer.playMoodTransition(climateId, true);
+
+    // Apply the corresponding climate scenario so the screen weather and wallpaper change
+    const climateScenarios = {
+      HOT: { temp: 88, wifi: 80, connected: true },
+      COLD: { temp: 32, wifi: 85, connected: true },
+      RAINY: { temp: 50, wifi: 22, connected: true },
+      STORM: { temp: 52, wifi: 0, connected: false },
+      SUNNY: { temp: 46, wifi: 96, connected: true },
+    };
+    const target = climateScenarios[climateId] || climateScenarios.SUNNY;
+    setTemp(target.temp);
+    setWifi(target.wifi);
+    setConnected(target.connected);
+    applySimulation(true, target.temp, target.wifi, target.connected);
   };
 
   const handlePreviewVoice = () => {
