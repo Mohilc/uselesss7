@@ -1,21 +1,34 @@
 /**
- * AudioSynthesizer — Procedural Climate Soundscapes & Climate Change SFX Engine
+ * AudioSynthesizer — Procedural Climate Soundscapes & Climatic Sound Engine
  * 
- * Generates dynamic audio using Web Audio API synthesis:
+ * Generates dynamic, cinematic audio using Web Audio API synthesis:
  *   1. Climate Change Transition SFX (Instant cinematic sonic shifts when weather changes)
- *   2. Procedural Ambient Soundscapes (Continuous reactive background weather)
- *   3. System & Thermal Warning SFX (Overheat siren, Wi-Fi drops, fan hum)
+ *   2. Procedural Ambient Soundscapes (Continuous reactive background weather loops)
+ *   3. Interactive Climatic Click SFX (Tactile audio feedback when touching the weather canvas)
+ *   4. System & Thermal Warnings (Overheating siren, Wi-Fi drops, fan hum)
  */
 class AudioSynthesizer {
   constructor() {
     this.ctx = null;
-    this.muted = true;
+    // Sound enabled by default unless explicitly disabled in localStorage
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('moodos_sound_enabled') : null;
+    this.muted = saved === 'false';
     this.volume = 0.35;
     this.masterGain = null;
     this.currentClimate = null;
     this.ambientInterval = null;
     this.transitionCooldown = false;
     this.cachedNoiseBuffers = {};
+
+    if (typeof window !== 'undefined') {
+      const unlockAudio = () => {
+        this.init();
+        window.removeEventListener('pointerdown', unlockAudio);
+        window.removeEventListener('keydown', unlockAudio);
+      };
+      window.addEventListener('pointerdown', unlockAudio, { passive: true });
+      window.addEventListener('keydown', unlockAudio, { passive: true });
+    }
   }
 
   init() {
@@ -29,8 +42,20 @@ class AudioSynthesizer {
       }
     }
     if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume();
+      this.ctx.resume().catch(() => {});
     }
+  }
+
+  getDestination(force = false) {
+    if (!this.ctx) return null;
+    if (force && this.muted) {
+      // Create a temporary gentle gain node connected directly to destination
+      const tempGain = this.ctx.createGain();
+      tempGain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+      tempGain.connect(this.ctx.destination);
+      return tempGain;
+    }
+    return this.masterGain || this.ctx.destination;
   }
 
   setVolume(volume) {
@@ -43,6 +68,9 @@ class AudioSynthesizer {
   setMuted(muted) {
     this.muted = muted;
     this.init();
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('moodos_sound_enabled', String(!muted));
+    }
     if (this.masterGain && this.ctx) {
       const targetGain = muted ? 0 : this.volume;
       this.masterGain.gain.linearRampToValueAtTime(targetGain, this.ctx.currentTime + 0.3);
@@ -101,8 +129,10 @@ class AudioSynthesizer {
     duration = 0.3,
     attack = 0.01,
     decay = 0.15,
+    force = false,
   } = {}) {
-    if (!this.ctx || this.muted) return;
+    this.init();
+    if (!this.ctx || (this.muted && !force)) return;
     const buffer = this.createNoiseBuffer(type, duration + 0.1);
     if (!buffer) return;
 
@@ -116,14 +146,15 @@ class AudioSynthesizer {
 
     const gainNode = this.ctx.createGain();
     const now = this.ctx.currentTime;
+    const actualGain = (force && this.muted) ? Math.min(gain, 0.08) : gain;
     gainNode.gain.setValueAtTime(0, now);
-    gainNode.gain.linearRampToValueAtTime(gain, now + attack);
-    gainNode.gain.linearRampToValueAtTime(gain * 0.7, now + duration - decay);
+    gainNode.gain.linearRampToValueAtTime(actualGain, now + attack);
+    gainNode.gain.linearRampToValueAtTime(actualGain * 0.7, now + duration - decay);
     gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
     source.connect(filter);
     filter.connect(gainNode);
-    gainNode.connect(this.masterGain);
+    gainNode.connect(this.getDestination(force));
 
     source.start(now);
     source.stop(now + duration);
@@ -134,10 +165,11 @@ class AudioSynthesizer {
   /**
    * Distinct cinematic sound effect when changing climate
    */
-  playClimateChangeSound(targetClimate) {
+  playClimateChangeSound(targetClimate, force = false) {
     this.init();
-    if (this.muted || !this.ctx) return;
+    if (!this.ctx || (this.muted && !force)) return;
 
+    const dest = this.getDestination(force);
     const now = this.ctx.currentTime;
 
     switch (targetClimate) {
@@ -157,7 +189,7 @@ class AudioSynthesizer {
           gain.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
 
           osc.connect(gain);
-          gain.connect(this.masterGain);
+          gain.connect(dest);
           osc.start(t);
           osc.stop(t + 1.25);
         });
@@ -172,10 +204,11 @@ class AudioSynthesizer {
           duration: 1.8,
           attack: 0.3,
           decay: 0.8,
+          force,
         });
 
         // Melodic celebratory bird trill
-        setTimeout(() => this.playBirdChirp(), 350);
+        setTimeout(() => this.playBirdChirp(force), 350);
         break;
       }
 
@@ -203,7 +236,7 @@ class AudioSynthesizer {
 
         osc.connect(filter);
         filter.connect(gain);
-        gain.connect(this.masterGain);
+        gain.connect(dest);
         osc.start(now);
         osc.stop(now + 1.55);
 
@@ -217,8 +250,9 @@ class AudioSynthesizer {
           duration: 0.9,
           attack: 0.05,
           decay: 0.4,
+          force,
         });
-        setTimeout(() => this.playFireCrackle(), 150);
+        setTimeout(() => this.playFireCrackle(force), 150);
         break;
       }
 
@@ -236,7 +270,7 @@ class AudioSynthesizer {
           gain.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
 
           osc.connect(gain);
-          gain.connect(this.masterGain);
+          gain.connect(dest);
           osc.start(t);
           osc.stop(t + 0.95);
         });
@@ -251,10 +285,11 @@ class AudioSynthesizer {
           duration: 0.4,
           attack: 0.005,
           decay: 0.2,
+          force,
         });
 
         // Arctic wind howl
-        setTimeout(() => this.playArcticWind(), 100);
+        setTimeout(() => this.playArcticWind(force), 100);
         break;
       }
 
@@ -269,6 +304,7 @@ class AudioSynthesizer {
           duration: 1.8,
           attack: 0.2,
           decay: 1.0,
+          force,
         });
 
         // Shower swoop
@@ -281,16 +317,16 @@ class AudioSynthesizer {
           duration: 1.5,
           attack: 0.1,
           decay: 0.8,
+          force,
         });
 
-        setTimeout(() => this.playRainPatter(), 200);
-        setTimeout(() => this.playRainPatter(), 450);
+        setTimeout(() => this.playRainPatter(force), 200);
+        setTimeout(() => this.playRainPatter(force), 450);
         break;
       }
 
       case 'STORM': {
         // Dramatic explosive lightning strike with sub-bass boom + electric zap
-        // Sub-bass thunderboom (40Hz)
         const subOsc = this.ctx.createOscillator();
         const subGain = this.ctx.createGain();
         subOsc.type = 'sine';
@@ -300,7 +336,7 @@ class AudioSynthesizer {
         subGain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
 
         subOsc.connect(subGain);
-        subGain.connect(this.masterGain);
+        subGain.connect(dest);
         subOsc.start(now);
         subOsc.stop(now + 1.85);
 
@@ -314,6 +350,7 @@ class AudioSynthesizer {
           duration: 0.15,
           attack: 0.002,
           decay: 0.08,
+          force,
         });
 
         // Low rumble layer
@@ -326,22 +363,177 @@ class AudioSynthesizer {
           duration: 2.2,
           attack: 0.05,
           decay: 1.6,
+          force,
         });
 
-        setTimeout(() => this.playHowlingWind(), 150);
+        setTimeout(() => this.playHowlingWind(force), 150);
         break;
       }
 
       default:
-        this.playSunnyWind();
+        this.playSunnyWind(force);
         break;
+    }
+  }
+
+  // ——————————————————— INTERACTIVE CANVAS CLICK SFX ———————————————————
+
+  /**
+   * Tactile climatic audio feedback when user touches or clicks anywhere on the weather screen
+   */
+  playClimateClickSound(climate = 'SUNNY') {
+    this.init();
+    if (!this.ctx) return;
+    const dest = this.getDestination(true);
+    const now = this.ctx.currentTime;
+
+    switch (climate) {
+      case 'RAINY': {
+        // Organic water droplet plopping into a puddle
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        const startFreq = 1600 + Math.random() * 400;
+        osc.frequency.setValueAtTime(startFreq, now);
+        osc.frequency.exponentialRampToValueAtTime(520, now + 0.08);
+
+        gain.gain.setValueAtTime(0.09, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+        osc.connect(gain);
+        gain.connect(dest);
+        osc.start(now);
+        osc.stop(now + 0.13);
+
+        // Micro droplet splash
+        this.playNoiseBurst({
+          type: 'pink',
+          filterFreq: 4200,
+          filterQ: 2,
+          filterType: 'bandpass',
+          gain: 0.04,
+          duration: 0.06,
+          attack: 0.002,
+          decay: 0.02,
+          force: true,
+        });
+        break;
+      }
+
+      case 'STORM': {
+        // Sharp electric lightning spark crack + mini sub-impact
+        const sub = this.ctx.createOscillator();
+        const subGain = this.ctx.createGain();
+        sub.type = 'sine';
+        sub.frequency.setValueAtTime(140, now);
+        sub.frequency.exponentialRampToValueAtTime(45, now + 0.25);
+        subGain.gain.setValueAtTime(0.18, now);
+        subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        sub.connect(subGain);
+        subGain.connect(dest);
+        sub.start(now);
+        sub.stop(now + 0.32);
+
+        this.playNoiseBurst({
+          type: 'white',
+          filterFreq: 6400,
+          filterQ: 2.5,
+          filterType: 'highpass',
+          gain: 0.12,
+          duration: 0.08,
+          attack: 0.001,
+          decay: 0.04,
+          force: true,
+        });
+        break;
+      }
+
+      case 'HOT': {
+        // Fire spark pop and heat hiss
+        const popOsc = this.ctx.createOscillator();
+        const popGain = this.ctx.createGain();
+        popOsc.type = 'triangle';
+        popOsc.frequency.setValueAtTime(600 + Math.random() * 200, now);
+        popOsc.frequency.exponentialRampToValueAtTime(180, now + 0.05);
+
+        popGain.gain.setValueAtTime(0.07, now);
+        popGain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+
+        popOsc.connect(popGain);
+        popGain.connect(dest);
+        popOsc.start(now);
+        popOsc.stop(now + 0.08);
+
+        this.playNoiseBurst({
+          type: 'white',
+          filterFreq: 2600 + Math.random() * 800,
+          filterQ: 5,
+          filterType: 'bandpass',
+          gain: 0.06,
+          duration: 0.05,
+          attack: 0.001,
+          decay: 0.02,
+          force: true,
+        });
+        break;
+      }
+
+      case 'COLD': {
+        // Crisp crystal ice ping
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        const freqs = [2093, 2349, 2793, 3135, 3520];
+        const f = freqs[Math.floor(Math.random() * freqs.length)];
+        osc.frequency.setValueAtTime(f, now);
+
+        gain.gain.setValueAtTime(0.07, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+        osc.connect(gain);
+        gain.connect(dest);
+        osc.start(now);
+        osc.stop(now + 0.42);
+
+        this.playNoiseBurst({
+          type: 'white',
+          filterFreq: 6000,
+          filterQ: 3,
+          filterType: 'highpass',
+          gain: 0.04,
+          duration: 0.04,
+          attack: 0.001,
+          decay: 0.02,
+          force: true,
+        });
+        break;
+      }
+
+      default: {
+        // SUNNY: Cheerful golden bell ping
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        const note = [523.25, 659.25, 783.99, 1046.5][Math.floor(Math.random() * 4)];
+        osc.frequency.setValueAtTime(note, now);
+        osc.frequency.exponentialRampToValueAtTime(note * 1.01, now + 0.3);
+
+        gain.gain.setValueAtTime(0.06, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+        osc.connect(gain);
+        gain.connect(dest);
+        osc.start(now);
+        osc.stop(now + 0.38);
+        break;
+      }
     }
   }
 
   // ——————————————————— INDIVIDUAL PROCEDURAL SOUNDS ———————————————————
 
   /** Gentle wind breeze (for SUNNY) */
-  playSunnyWind() {
+  playSunnyWind(force = false) {
     this.playNoiseBurst({
       type: 'pink',
       filterFreq: 420,
@@ -351,12 +543,15 @@ class AudioSynthesizer {
       duration: 2.6,
       attack: 0.5,
       decay: 0.9,
+      force,
     });
   }
 
   /** Bird chirp — realistic multi-tone sine sweep */
-  playBirdChirp() {
-    if (!this.ctx || this.muted) return;
+  playBirdChirp(force = false) {
+    this.init();
+    if (!this.ctx || (this.muted && !force)) return;
+    const dest = this.getDestination(force);
     const now = this.ctx.currentTime;
     const baseFreq = 2600 + Math.random() * 1800;
 
@@ -373,14 +568,14 @@ class AudioSynthesizer {
       gain.gain.exponentialRampToValueAtTime(0.001, t + 0.055);
 
       osc.connect(gain);
-      gain.connect(this.masterGain);
+      gain.connect(dest);
       osc.start(t);
       osc.stop(t + 0.065);
     }
   }
 
   /** Rain patter */
-  playRainPatter() {
+  playRainPatter(force = false) {
     const count = 4 + Math.floor(Math.random() * 6);
     for (let i = 0; i < count; i++) {
       setTimeout(() => {
@@ -393,13 +588,14 @@ class AudioSynthesizer {
           duration: 0.06 + Math.random() * 0.04,
           attack: 0.002,
           decay: 0.02,
+          force,
         });
       }, i * (18 + Math.random() * 35));
     }
   }
 
   /** Continuous rain wash */
-  playRainWash() {
+  playRainWash(force = false) {
     this.playNoiseBurst({
       type: 'pink',
       filterFreq: 2400,
@@ -409,12 +605,14 @@ class AudioSynthesizer {
       duration: 3.2,
       attack: 0.4,
       decay: 1.1,
+      force,
     });
   }
 
   /** Thunder rumble with sub-bass */
-  playThunder() {
-    if (!this.ctx || this.muted) return;
+  playThunder(force = false) {
+    this.init();
+    if (!this.ctx || (this.muted && !force)) return;
     this.playNoiseBurst({
       type: 'brown',
       filterFreq: 85,
@@ -424,6 +622,7 @@ class AudioSynthesizer {
       duration: 2.8,
       attack: 0.03,
       decay: 1.8,
+      force,
     });
     setTimeout(() => {
       this.playNoiseBurst({
@@ -435,13 +634,16 @@ class AudioSynthesizer {
         duration: 0.09,
         attack: 0.002,
         decay: 0.04,
+        force,
       });
     }, 40);
   }
 
   /** Howling wind */
-  playHowlingWind() {
-    if (!this.ctx || this.muted) return;
+  playHowlingWind(force = false) {
+    this.init();
+    if (!this.ctx || (this.muted && !force)) return;
+    const dest = this.getDestination(force);
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -465,7 +667,7 @@ class AudioSynthesizer {
 
     osc.connect(filter);
     filter.connect(gain);
-    gain.connect(this.masterGain);
+    gain.connect(dest);
     osc.start(now);
     osc.stop(now + 3.5);
 
@@ -478,11 +680,12 @@ class AudioSynthesizer {
       duration: 3,
       attack: 0.3,
       decay: 1,
+      force,
     });
   }
 
   /** Fire crackle */
-  playFireCrackle() {
+  playFireCrackle(force = false) {
     const pops = 5 + Math.floor(Math.random() * 6);
     for (let i = 0; i < pops; i++) {
       setTimeout(() => {
@@ -495,14 +698,17 @@ class AudioSynthesizer {
           duration: 0.03 + Math.random() * 0.03,
           attack: 0.001,
           decay: 0.015,
+          force,
         });
       }, i * (70 + Math.random() * 180));
     }
   }
 
   /** Heat haze drone */
-  playHeatDrone() {
-    if (!this.ctx || this.muted) return;
+  playHeatDrone(force = false) {
+    this.init();
+    if (!this.ctx || (this.muted && !force)) return;
+    const dest = this.getDestination(force);
     const now = this.ctx.currentTime;
     [55, 82.5, 110].forEach((freq, i) => {
       const osc = this.ctx.createOscillator();
@@ -514,15 +720,17 @@ class AudioSynthesizer {
       gain.gain.linearRampToValueAtTime(0.018, now + 2);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 3.2);
       osc.connect(gain);
-      gain.connect(this.masterGain);
+      gain.connect(dest);
       osc.start(now);
       osc.stop(now + 3.3);
     });
   }
 
   /** Ice crystal chime */
-  playIceChime() {
-    if (!this.ctx || this.muted) return;
+  playIceChime(force = false) {
+    this.init();
+    if (!this.ctx || (this.muted && !force)) return;
+    const dest = this.getDestination(force);
     const now = this.ctx.currentTime;
     const freqs = [1320, 1980, 2640, 3520].sort(() => Math.random() - 0.5).slice(0, 2);
     freqs.forEach((f, i) => {
@@ -534,15 +742,17 @@ class AudioSynthesizer {
       gain.gain.linearRampToValueAtTime(0.03, now + i * 0.12 + 0.01);
       gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.85);
       osc.connect(gain);
-      gain.connect(this.masterGain);
+      gain.connect(dest);
       osc.start(now + i * 0.12);
       osc.stop(now + i * 0.12 + 0.95);
     });
   }
 
   /** Arctic wind whistle */
-  playArcticWind() {
-    if (!this.ctx || this.muted) return;
+  playArcticWind(force = false) {
+    this.init();
+    if (!this.ctx || (this.muted && !force)) return;
+    const dest = this.getDestination(force);
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -565,7 +775,7 @@ class AudioSynthesizer {
 
     osc.connect(filter);
     filter.connect(gain);
-    gain.connect(this.masterGain);
+    gain.connect(dest);
     osc.start(now);
     osc.stop(now + 3.1);
 
@@ -578,6 +788,7 @@ class AudioSynthesizer {
       duration: 2.6,
       attack: 0.2,
       decay: 0.9,
+      force,
     });
   }
 
@@ -649,27 +860,27 @@ class AudioSynthesizer {
   /**
    * Main transition handler triggered on mood / climate shift
    */
-  playMoodTransition(climate) {
-    if (this.muted) return;
+  playMoodTransition(climate, force = false) {
     this.init();
-    if (!this.ctx) return;
+    if (!this.ctx || (this.muted && !force)) return;
 
     if (this.transitionCooldown) return;
     this.transitionCooldown = true;
-    setTimeout(() => { this.transitionCooldown = false; }, 1800);
+    setTimeout(() => { this.transitionCooldown = false; }, 1400);
 
     // Play dedicated climate change sound effect
-    this.playClimateChangeSound(climate);
+    this.playClimateChangeSound(climate, force);
 
-    // Spin up ambient loop
-    setTimeout(() => this.startAmbientLoop(climate), 900);
+    // Spin up ambient loop if not muted
+    if (!this.muted) {
+      setTimeout(() => this.startAmbientLoop(climate), 900);
+    }
   }
 
   /** Overheating emergency siren */
   playOverheatingAlarm() {
-    if (this.muted) return;
     this.init();
-    if (!this.ctx) return;
+    if (!this.ctx || this.muted) return;
 
     const now = this.ctx.currentTime;
     for (let i = 0; i < 3; i++) {
@@ -696,7 +907,7 @@ class AudioSynthesizer {
   playInteractionChime() {
     this.init();
     if (!this.ctx) return;
-    const wasMuted = this.muted;
+    const dest = this.getDestination(true);
     const now = this.ctx.currentTime;
 
     // Harmonious cyber pentatonic sweep (C6, E6, G6, B6)
@@ -710,12 +921,11 @@ class AudioSynthesizer {
       osc.frequency.exponentialRampToValueAtTime(freq * 1.02, t + 0.35);
 
       gain.gain.setValueAtTime(0, t);
-      const vol = wasMuted ? 0.04 : (this.volume * 0.25);
-      gain.gain.linearRampToValueAtTime(vol, t + 0.015);
+      gain.gain.linearRampToValueAtTime(0.06, t + 0.015);
       gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
 
       osc.connect(gain);
-      gain.connect(this.masterGain || this.ctx.destination);
+      gain.connect(dest);
       osc.start(t);
       osc.stop(t + 0.45);
     });
@@ -723,4 +933,3 @@ class AudioSynthesizer {
 }
 
 export default new AudioSynthesizer();
-

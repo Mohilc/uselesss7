@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import audioSynthesizer from '../services/audioSynthesizer';
 
 /**
  * ClimateEffect — Ultra-Immersive Interactive Weather & Climate Physics Engine
@@ -114,6 +115,9 @@ const ClimateEffect = ({ climate = 'SUNNY', perfMode = 'balanced' }) => {
     const handlePointerDown = (e) => {
       const px = e.clientX;
       const py = e.clientY;
+
+      // Play tactile climatic sound effect on weather screen click
+      audioSynthesizer.playClimateClickSound(climate);
 
       if (climate === 'RAINY' || climate === 'STORM') {
         ripples.push({

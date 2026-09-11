@@ -15,14 +15,14 @@ import {
 } from 'lucide-react';
 
 const QUICK_EMOTIONS = [
-  { key: 'HAPPY', label: 'Joy', emoji: '😊', temp: 45, wifi: 90, color: 'text-emerald-300 hover:border-emerald-400' },
-  { key: 'ANGRY', label: 'Blaze', emoji: '😡', temp: 88, wifi: 65, color: 'text-rose-300 hover:border-rose-400' },
-  { key: 'COLD', label: 'Frost', emoji: '🥶', temp: 34, wifi: 75, color: 'text-cyan-300 hover:border-cyan-400' },
-  { key: 'STRESSED', label: 'Redline', emoji: '🥵', temp: 74, wifi: 60, color: 'text-amber-300 hover:border-amber-400' },
-  { key: 'EXCITED', label: 'Turbo', emoji: '🤩', temp: 48, wifi: 98, color: 'text-pink-300 hover:border-pink-400' },
-  { key: 'NEUTRAL', label: 'Zen', emoji: '😐', temp: 48, wifi: 50, color: 'text-indigo-300 hover:border-indigo-400' },
-  { key: 'SAD', label: 'Rain', emoji: '😔', temp: 50, wifi: 20, color: 'text-slate-300 hover:border-slate-400' },
-  { key: 'LONELY', label: 'Void', emoji: '😭', temp: 50, wifi: 0, color: 'text-purple-300 hover:border-purple-400' },
+  { key: 'HAPPY', label: 'Joy', emoji: '😊', temp: 45, wifi: 90, climate: 'SUNNY', color: 'text-emerald-300 hover:border-emerald-400' },
+  { key: 'ANGRY', label: 'Blaze', emoji: '😡', temp: 88, wifi: 65, climate: 'HOT', color: 'text-rose-300 hover:border-rose-400' },
+  { key: 'COLD', label: 'Frost', emoji: '🥶', temp: 34, wifi: 75, climate: 'COLD', color: 'text-cyan-300 hover:border-cyan-400' },
+  { key: 'STRESSED', label: 'Redline', emoji: '🥵', temp: 74, wifi: 60, climate: 'HOT', color: 'text-amber-300 hover:border-amber-400' },
+  { key: 'EXCITED', label: 'Turbo', emoji: '🤩', temp: 48, wifi: 98, climate: 'SUNNY', color: 'text-pink-300 hover:border-pink-400' },
+  { key: 'NEUTRAL', label: 'Zen', emoji: '😐', temp: 48, wifi: 50, climate: 'SUNNY', color: 'text-indigo-300 hover:border-indigo-400' },
+  { key: 'SAD', label: 'Rain', emoji: '😔', temp: 50, wifi: 20, climate: 'RAINY', color: 'text-slate-300 hover:border-slate-400' },
+  { key: 'LONELY', label: 'Void', emoji: '😭', temp: 50, wifi: 0, climate: 'STORM', color: 'text-purple-300 hover:border-purple-400' },
 ];
 
 const PERSONALITIES = ['Sarcastic', 'Dramatic', 'Zen', 'Gamer', 'Tsundere'];

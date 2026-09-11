@@ -35,7 +35,7 @@ const Dashboard = () => {
   const [telemetry, setTelemetry] = useState(null);
   const [wsStatus, setWsStatus] = useState('connecting');
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('moodos_sound_enabled') !== 'false');
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [volume, setVolume] = useState(35);
   const [zenMode, setZenMode] = useState(false);
@@ -122,6 +122,11 @@ const Dashboard = () => {
     }
   }, [isWallpaperSyncOn, telemetry]);
 
+  // Audio state sync on mount
+  useEffect(() => {
+    audioSynthesizer.setMuted(!soundEnabled);
+  }, []);
+
   const handleVolumeChange = useCallback((e) => {
     const val = Number(e.target.value);
     setVolume(val);
@@ -130,6 +135,9 @@ const Dashboard = () => {
 
   const handleApplyQuickMood = useCallback(async (item) => {
     try {
+      if (item.climate) {
+        audioSynthesizer.playMoodTransition(item.climate, true);
+      }
       await setSimulation({
         enabled: true,
         temperature: item.temp,
@@ -140,7 +148,7 @@ const Dashboard = () => {
     } catch (err) {
       console.error('Failed to apply quick mood:', err);
     }
-  }, []);
+  }, [refreshData]);
 
   const handleResetHardware = useCallback(async () => {
     try {
@@ -249,6 +257,7 @@ const Dashboard = () => {
   const handleToggleSound = () => {
     const next = !soundEnabled;
     setSoundEnabled(next);
+    localStorage.setItem('moodos_sound_enabled', String(next));
     audioSynthesizer.setMuted(!next);
     if (next && telemetry?.mood?.climateEffect) {
       audioSynthesizer.startAmbientLoop(telemetry.mood.climateEffect);
