@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Volume2, Sparkles, MessageSquare, Flame, Snowflake, Zap, Heart, Radio } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Volume2, Sparkles, MessageSquare, Flame, Snowflake, Zap, Heart, Radio, Compass } from 'lucide-react';
 import audioSynthesizer from '../services/audioSynthesizer';
 import voiceSynthesizer from '../services/voiceSynthesizer';
+import AvatarCostumes from './AvatarCostumes';
 
 const MOOD_THEMES = {
   HAPPY: {
@@ -110,6 +111,49 @@ const MOOD_THEMES = {
   },
 };
 
+const CLIMATE_ACTIVITIES = {
+  RAIN: [
+    { id: 'rain-umbrella', label: 'Holding Umbrella in Downpour', icon: '☔', quote: "Keeping my silicon dry under this yellow canopy!" },
+    { id: 'rain-twirl', label: 'Twirling Umbrella to Spin Off Rain', icon: '🌀', quote: "Wheee! Spinning the raindrops right off!" },
+    { id: 'rain-slicker', label: 'Snuggled in Cozy Raincoat', icon: '🧥', quote: "Vibrant yellow slicker on, ready for any puddle." },
+  ],
+  STORM: [
+    { id: 'storm-rod', label: 'Catching Sparks on Lightning Rod', icon: '⚡', quote: "Lightning rod grounded! Cyberspace is wild today." },
+    { id: 'storm-beacon', label: 'Scanning Mist for Wi-Fi Signal', icon: '📡', quote: "Pinging for any Wi-Fi beacons through the squall..." },
+    { id: 'storm-poncho', label: 'Bracing Against Cyber Gale', icon: '⛈️', quote: "Storm poncho secured. Holding steady against high packet winds." },
+  ],
+  COLD: [
+    { id: 'cold-shiver', label: 'Shivering in Knitted Beanie & Scarf', icon: '❄️', quote: "B-b-brrr! At least my knitted pompom beanie is toasty!" },
+    { id: 'cold-breath', label: 'Blowing Frosty Breath Clouds', icon: '💨', quote: "Transistors are sub-zero... time to bundle up!" },
+    { id: 'cold-pompom', label: 'Bobbing Fluffy Beanie Pompom', icon: '🧶', quote: "Wrapped in woolen warmth while the CPU idles." },
+  ],
+  HOT: [
+    { id: 'hot-fan', label: 'Frantically Fanning CPU Thermals', icon: '🪭', quote: "Fanning down the cores! Need emergency cold air!" },
+    { id: 'hot-steam', label: 'Venting Boiling Steam Pressure', icon: '♨️', quote: "Hissing steam from side vents! Overheating fury!" },
+    { id: 'hot-martial', label: 'Enduring Heat in Combat Headband', icon: '🔥', quote: "Red headband tied tight. Fighting through the heatwave!" },
+  ],
+  WARM: [
+    { id: 'warm-ice', label: 'Balancing Medical Ice Pack', icon: '🧊', quote: "Cold ice pack right on the motherboard. Ahh, sweet relief." },
+    { id: 'warm-fan', label: 'Revving Mini USB Desk Fan', icon: '🌀', quote: "Desk fan spinning at max RPM to drop system temps." },
+    { id: 'warm-sweat', label: 'Mopping System Load Sweat', icon: '💧', quote: "Heavy processing load... wiping thermal sweat!" },
+  ],
+  SUNNY: [
+    { id: 'sunny-shades', label: 'Rocking Cool Polarized Shades', icon: '🕶️', quote: "Too cool to compute. Optimal solar harmony!" },
+    { id: 'sunny-drink', label: 'Sipping Tropical Coconut Drink', icon: '🥥', quote: "Fresh coconut drink and tropical vibes all day!" },
+    { id: 'sunny-bask', label: 'Basking in Golden Sunbeams', icon: '☀️', quote: "Clear skies, full signal, zero packet loss!" },
+  ],
+  EXCITED: [
+    { id: 'turbo-thruster', label: 'Firing Dual Rocket Boosters', icon: '🚀', quote: "Igniting twin thrusters! Turbo boost speed engaged!" },
+    { id: 'turbo-goggles', label: 'Calibrating Aero Flight Goggles', icon: '🥽', quote: "Aviator goggles down. Ready to break the latency barrier!" },
+    { id: 'turbo-spin', label: 'Doing 360° Aerial Barrel Rolls', icon: '✨', quote: "Maximum clock speed! I'm flying across cyberspace!" },
+  ],
+  NEUTRAL: [
+    { id: 'zen-lofi', label: 'Vibing to Lo-Fi DJ Bitbeats', icon: '🎧', quote: "Headphones on, streaming calm ambient lo-fi bitstreams." },
+    { id: 'zen-orbit', label: 'Floating in Harmonic Zen Orbit', icon: '🧘', quote: "Zero-g meditation. Transistors pulsing in perfect balance." },
+    { id: 'zen-scan', label: 'Observing Silent Data Streams', icon: '✨', quote: "Quiet serenity across all input/output buses." },
+  ],
+};
+
 const LivingAvatar = ({
   mood,
   personality = 'Sarcastic',
@@ -127,8 +171,74 @@ const LivingAvatar = ({
   const [customQuote, setCustomQuote] = useState(null);
   const [pokeParticles, setPokeParticles] = useState([]);
 
+  // Organic Random Wandering State (Smooth random drift & rotation)
+  const [wander, setWander] = useState({ x: 0, y: 0, rot: 0 });
+  const [activityIdx, setActivityIdx] = useState(0);
+  const [isSpecialAction, setIsSpecialAction] = useState(false);
+
   const containerRef = useRef(null);
   const blinkTimerRef = useRef(null);
+
+  // Normalize current climate key for activities
+  const activeClimateKey = useMemo(() => {
+    const c = (mood?.climateEffect || '').toUpperCase();
+    if (c === 'RAIN' || c === 'RAINY' || moodKey === 'SAD') return 'RAIN';
+    if (c === 'STORM' || moodKey === 'LONELY') return 'STORM';
+    if (c === 'COLD' || c === 'FREEZING' || moodKey === 'COLD') return 'COLD';
+    if (c === 'HOT' || c === 'FIRE' || moodKey === 'ANGRY') return 'HOT';
+    if (c === 'WARM' || moodKey === 'STRESSED') return 'WARM';
+    if (moodKey === 'EXCITED') return 'EXCITED';
+    if (c === 'SUNNY' || moodKey === 'HAPPY') return 'SUNNY';
+    return 'NEUTRAL';
+  }, [mood?.climateEffect, moodKey]);
+
+  const activities = useMemo(() => {
+    return CLIMATE_ACTIVITIES[activeClimateKey] || CLIMATE_ACTIVITIES.NEUTRAL;
+  }, [activeClimateKey]);
+
+  const currentActivity = activities[activityIdx % activities.length] || activities[0];
+
+  // Autonomous periodic random wandering & activity cycling
+  useEffect(() => {
+    const wanderInterval = setInterval(() => {
+      // Pick random smooth drift within bounds (-23px to +23px, -14px to +14px)
+      const nextX = Math.round((Math.random() - 0.5) * 46);
+      const nextY = Math.round((Math.random() - 0.5) * 28);
+      const nextRot = Number(((Math.random() - 0.5) * 7).toFixed(1));
+      setWander({ x: nextX, y: nextY, rot: nextRot });
+    }, 3400);
+
+    const activityInterval = setInterval(() => {
+      setActivityIdx((prev) => (prev + 1) % activities.length);
+    }, 7000);
+
+    return () => {
+      clearInterval(wanderInterval);
+      clearInterval(activityInterval);
+    };
+  }, [activities.length]);
+
+  const triggerSpecialAction = useCallback(() => {
+    setIsSpecialAction(true);
+    audioSynthesizer.playInteractionChime();
+    setTimeout(() => setIsSpecialAction(false), 1400);
+  }, []);
+
+  const handleNextActivity = useCallback((e) => {
+    e.stopPropagation();
+    setActivityIdx((prev) => {
+      const nextIdx = (prev + 1) % activities.length;
+      const nextAct = activities[nextIdx];
+      if (nextAct?.quote) {
+        setCustomQuote(nextAct.quote);
+        if (voiceEnabled) {
+          voiceSynthesizer.speak(nextAct.quote, personality, moodKey, true);
+        }
+      }
+      return nextIdx;
+    });
+    triggerSpecialAction();
+  }, [activities, personality, moodKey, voiceEnabled, triggerSpecialAction]);
 
   // Periodic organic blinking
   useEffect(() => {
@@ -175,9 +285,7 @@ const LivingAvatar = ({
   const handlePoke = (e) => {
     e.stopPropagation();
     setIsPoked(true);
-
-    // Audio chime
-    audioSynthesizer.playInteractionChime();
+    triggerSpecialAction();
 
     // Spawn 8-10 floating particle emotes
     const emojis = moodKey === 'HAPPY' ? ['✨', '💚', '⚡', '⭐'] :
@@ -231,7 +339,7 @@ const LivingAvatar = ({
       {/* Floating Holographic Speech Bubble */}
       <div
         onClick={handlePoke}
-        className="group cursor-pointer mb-5 max-w-lg w-full px-4 py-3 rounded-2xl glass-panel-interactive border border-white/10 shadow-xl backdrop-blur-md relative transition-all duration-300 hover:scale-[1.02]"
+        className="group cursor-pointer mb-3 max-w-lg w-full px-4 py-3 rounded-2xl glass-panel-interactive border border-white/10 shadow-xl backdrop-blur-md relative transition-all duration-300 hover:scale-[1.02]"
         style={{
           boxShadow: `0 10px 30px -10px ${theme.glow}`,
         }}
@@ -267,19 +375,47 @@ const LivingAvatar = ({
         />
       </div>
 
-      {/* Living Cyber-Orb Avatar Centerpiece */}
+      {/* Dynamic Climate Activity Badge */}
+      <button
+        onClick={handleNextActivity}
+        className="mb-4 px-3.5 py-1.5 rounded-full border border-white/10 hover:border-white/25 transition-all text-xs flex items-center gap-2 group shadow-lg backdrop-blur-md cursor-pointer active:scale-95 z-10"
+        style={{
+          backgroundColor: `${theme.primary}18`,
+          boxShadow: `0 4px 20px -4px ${theme.glow}`,
+        }}
+        title="Click to cycle next random activity & action!"
+      >
+        <span className="text-base group-hover:scale-125 transition-transform duration-300">
+          {currentActivity.icon}
+        </span>
+        <span className="text-slate-300 text-[11px] sm:text-xs font-medium">
+          Activity: <strong className="text-white font-semibold">{currentActivity.label}</strong>
+        </span>
+        <Sparkles className="w-3 h-3 text-slate-400 group-hover:text-amber-300 transition-colors" />
+      </button>
+
+      {/* Living Cyber-Orb Avatar Centerpiece with Random Wandering Physics */}
       <div
         onClick={handlePoke}
-        className={`relative cursor-pointer transition-transform duration-300 group ${
+        className={`relative cursor-pointer group select-none ${
           isPoked ? 'scale-90 rotate-3' : 'hover:scale-105'
         }`}
         style={{
-          transform: `perspective(600px) rotateY(${tilt.x}deg) rotateX(${tilt.y}deg) ${
+          transform: `perspective(700px) translate3d(${wander.x}px, ${wander.y}px, 0px) rotateY(${tilt.x}deg) rotateX(${tilt.y}deg) rotate(${wander.rot}deg) ${
             isPoked ? 'scale(0.92)' : ''
           }`,
+          transition: isPoked ? 'transform 0.15s ease' : 'transform 3.4s cubic-bezier(0.22, 1, 0.36, 1)',
         }}
         title="Click to interact with MoodCore!"
       >
+        {/* Dynamic Climate Costumes (Umbrella, Raincoat, Beanie, Scarf, Fan, Shades, etc.) */}
+        <AvatarCostumes
+          climate={mood?.climateEffect}
+          moodKey={moodKey}
+          isSpecialAction={isSpecialAction}
+          onTriggerSpecialAction={triggerSpecialAction}
+        />
+
         {/* Outer Rotating Holographic Data Ring */}
         <div
           className="absolute -inset-7 sm:-inset-9 rounded-full border border-dashed border-white/20 animate-spin-slow pointer-events-none"
@@ -315,9 +451,11 @@ const LivingAvatar = ({
           }}
         />
 
-        {/* Core Spherical Shell */}
+        {/* Core Spherical Shell (with Cold Shiver physics) */}
         <div
-          className="w-40 h-40 sm:w-48 sm:h-48 rounded-full relative overflow-hidden flex flex-col items-center justify-center shadow-2xl transition-all duration-500"
+          className={`w-40 h-40 sm:w-48 sm:h-48 rounded-full relative overflow-hidden flex flex-col items-center justify-center shadow-2xl transition-all duration-500 ${
+            activeClimateKey === 'COLD' ? 'animate-avatar-shiver' : ''
+          }`}
           style={{
             background: `radial-gradient(circle at 35% 30%, ${theme.primary}55, #080c16 75%)`,
             border: `2px solid ${theme.primary}80`,
