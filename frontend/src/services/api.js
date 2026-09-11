@@ -1,4 +1,4 @@
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 export const fetchSystemData = async () => {
   const res = await fetch(`${API_BASE}/system`);
@@ -102,10 +102,18 @@ export const fetchWallpaperStatus = async () => {
  * Creates resilient WebSocket connection that automatically recovers
  */
 export const connectTelemetryStream = (onMessage, onStatusChange) => {
-  const isDev = window.location.port === '3000' || window.location.port === '5173';
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const host = isDev ? 'localhost:5000' : window.location.host;
-  const wsUrl = `${protocol}//${host}/ws`;
+  const backendUrl = import.meta.env.VITE_API_URL;
+  let wsUrl;
+  if (backendUrl) {
+    // Production: derive WS URL from the backend URL
+    const url = new URL(backendUrl);
+    const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+    wsUrl = `${protocol}//${url.host}/ws`;
+  } else {
+    // Dev: connect to local backend
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    wsUrl = `${protocol}//localhost:5000/ws`;
+  }
 
   let ws = null;
   let reconnectTimeout = null;
