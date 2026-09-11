@@ -1,0 +1,526 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: #05070d;
+  color: #f1f5f9;
+  overflow-x: hidden;
+  user-select: none;
+}
+
+/* Glassmorphism primitives */
+.glass-panel {
+  background: rgba(13, 18, 30, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+}
+
+.glass-panel-interactive {
+  background: rgba(13, 18, 30, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.glass-panel-interactive:hover {
+  background: rgba(22, 30, 48, 0.75);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.7), 0 0 20px rgba(99, 102, 241, 0.15);
+}
+
+.glass-pill {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(10, 14, 23, 0.6);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.3);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.6);
+}
+
+/* Animations */
+@keyframes cyber-spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes cyber-spin-reverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes float-gentle {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1deg);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+}
+
+@keyframes core-breathe {
+  0%, 100% {
+    box-shadow: 0 0 40px var(--core-glow, rgba(99, 102, 241, 0.4)), inset 0 0 20px rgba(255, 255, 255, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 70px var(--core-glow, rgba(99, 102, 241, 0.7)), inset 0 0 35px rgba(255, 255, 255, 0.4);
+  }
+}
+
+@keyframes radar-sweep {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-float {
+  animation: float-gentle 4s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: cyber-spin-slow 24s linear infinite;
+}
+
+.animate-spin-reverse-slow {
+  animation: cyber-spin-reverse 18s linear infinite;
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 3s ease-in-out infinite;
+}
+
+.animate-radar {
+  animation: radar-sweep 4s linear infinite;
+}
+
+/* Ambient Procedural Aurora Mesh Gradients (mood-based, still used as base) */
+.aurora-happy {
+  background: radial-gradient(circle at 50% 25%, rgba(16, 185, 129, 0.35) 0%, rgba(245, 158, 11, 0.15) 45%, #050b0e 100%);
+}
+.aurora-angry {
+  background: radial-gradient(circle at 50% 30%, rgba(239, 68, 68, 0.4) 0%, rgba(185, 28, 28, 0.2) 50%, #120306 100%);
+}
+.aurora-stressed {
+  background: radial-gradient(circle at 60% 30%, rgba(249, 115, 22, 0.4) 0%, rgba(217, 119, 6, 0.18) 50%, #130802 100%);
+}
+.aurora-cold {
+  background: radial-gradient(circle at 50% 30%, rgba(56, 189, 248, 0.4) 0%, rgba(14, 116, 144, 0.2) 50%, #030e16 100%);
+}
+.aurora-excited {
+  background: radial-gradient(circle at 50% 25%, rgba(236, 72, 153, 0.35) 0%, rgba(168, 85, 247, 0.25) 40%, rgba(6, 182, 212, 0.15) 70%, #080314 100%);
+}
+.aurora-neutral {
+  background: radial-gradient(circle at 50% 30%, rgba(99, 102, 241, 0.25) 0%, rgba(71, 85, 105, 0.2) 50%, #070913 100%);
+}
+.aurora-sad {
+  background: radial-gradient(circle at 50% 40%, rgba(100, 116, 139, 0.3) 0%, rgba(30, 41, 59, 0.3) 50%, #04070d 100%);
+}
+.aurora-lonely {
+  background: radial-gradient(circle at 50% 40%, rgba(139, 92, 246, 0.35) 0%, rgba(76, 29, 149, 0.2) 50%, #090316 100%);
+}
+
+/* ================================================================
+   CLIMATE ZONE BACKGROUNDS — Temperature-Driven Immersive Wallpapers
+   Multi-layered animated gradient system with pseudo-element depth.
+   Each zone has 3 visual layers: base, ::before, ::after
+   ================================================================ */
+
+.climate-bg {
+  position: absolute;
+  inset: 0;
+  opacity: 1;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  will-change: filter;
+  contain: layout style paint;
+}
+
+.climate-bg.active {
+  opacity: 1;
+}
+
+.climate-bg::before,
+.climate-bg::after {
+  content: '';
+  position: absolute;
+  inset: -15%;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* ─── FREEZING: ≤ 30°C — Pulsing Arctic Aurora with Crystalline Ice Sheets ─── */
+.climate-freezing {
+  background:
+    radial-gradient(ellipse at 20% 15%, rgba(120, 200, 255, 0.45) 0%, transparent 45%),
+    radial-gradient(ellipse at 80% 55%, rgba(56, 189, 248, 0.35) 0%, transparent 40%),
+    radial-gradient(ellipse at 40% 85%, rgba(186, 230, 253, 0.2) 0%, transparent 50%),
+    radial-gradient(ellipse at 65% 20%, rgba(147, 197, 253, 0.25) 0%, transparent 35%),
+    linear-gradient(180deg, #010a18 0%, #041525 30%, #071d33 60%, #0a1929 100%);
+  animation: climate-freeze-pulse 6s ease-in-out infinite;
+}
+
+.climate-freezing::before {
+  background:
+    radial-gradient(ellipse at 30% 30%, rgba(56, 189, 248, 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 70%, rgba(125, 211, 252, 0.2) 0%, transparent 50%);
+  animation: climate-freeze-aurora 10s ease-in-out infinite alternate;
+  mix-blend-mode: screen;
+}
+
+.climate-freezing::after {
+  background:
+    radial-gradient(circle at 15% 50%, rgba(186, 230, 253, 0.15) 0%, transparent 35%),
+    radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.12) 0%, transparent 30%),
+    radial-gradient(circle at 50% 80%, rgba(224, 242, 254, 0.1) 0%, transparent 40%);
+  animation: climate-freeze-shimmer 8s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+
+@keyframes climate-freeze-pulse {
+  0%, 100% { filter: brightness(1) hue-rotate(0deg); }
+  30% { filter: brightness(1.2) hue-rotate(-12deg); }
+  60% { filter: brightness(1.1) hue-rotate(5deg); }
+}
+
+@keyframes climate-freeze-aurora {
+  0% { transform: translate(0%, 0%) rotate(0deg) scale(1); }
+  50% { transform: translate(5%, -3%) rotate(3deg) scale(1.1); }
+  100% { transform: translate(-3%, 5%) rotate(-2deg) scale(1.05); }
+}
+
+@keyframes climate-freeze-shimmer {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.6; }
+  50% { transform: translate(3%, -2%) scale(1.08); opacity: 1; }
+}
+
+/* ─── COLD: 31–44°C — Drifting Winter Haze with Snowfield Glow ─── */
+.climate-cold {
+  background:
+    radial-gradient(ellipse at 25% 10%, rgba(147, 197, 253, 0.4) 0%, transparent 40%),
+    radial-gradient(ellipse at 75% 40%, rgba(96, 165, 250, 0.3) 0%, transparent 45%),
+    radial-gradient(ellipse at 45% 80%, rgba(224, 242, 254, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 15%, rgba(56, 189, 248, 0.2) 0%, transparent 35%),
+    linear-gradient(180deg, #030e16 0%, #081c30 40%, #0c2240 70%, #0f2035 100%);
+  animation: climate-cold-breathe 8s ease-in-out infinite;
+}
+
+.climate-cold::before {
+  background:
+    radial-gradient(ellipse at 40% 20%, rgba(186, 230, 253, 0.25) 0%, transparent 45%),
+    radial-gradient(ellipse at 60% 60%, rgba(147, 197, 253, 0.18) 0%, transparent 50%);
+  animation: climate-cold-drift 14s ease-in-out infinite alternate;
+  mix-blend-mode: screen;
+}
+
+.climate-cold::after {
+  background: radial-gradient(ellipse at 50% 50%, rgba(224, 242, 254, 0.08) 0%, transparent 60%);
+  animation: climate-cold-fog 12s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+
+@keyframes climate-cold-breathe {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.15) hue-rotate(-5deg); }
+}
+
+@keyframes climate-cold-drift {
+  0% { transform: translate(0%, 0%) scale(1); }
+  100% { transform: translate(8%, -5%) scale(1.12); }
+}
+
+@keyframes climate-cold-fog {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.5; }
+  33% { transform: translate(-4%, 3%) scale(1.15); opacity: 0.8; }
+  66% { transform: translate(5%, -2%) scale(1.1); opacity: 0.6; }
+}
+
+/* ─── COOL: 45–54°C — Misty Mountain Fog with Teal Bioluminescence ─── */
+.climate-cool {
+  background:
+    radial-gradient(ellipse at 20% 25%, rgba(99, 102, 241, 0.28) 0%, transparent 45%),
+    radial-gradient(ellipse at 75% 15%, rgba(34, 211, 238, 0.22) 0%, transparent 40%),
+    radial-gradient(ellipse at 45% 65%, rgba(148, 163, 184, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 75%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
+    linear-gradient(180deg, #060812 0%, #0a1020 35%, #0e1830 65%, #0f1b2d 100%);
+  animation: climate-cool-flow 12s ease-in-out infinite;
+}
+
+.climate-cool::before {
+  background:
+    radial-gradient(ellipse at 35% 40%, rgba(34, 211, 238, 0.2) 0%, transparent 45%),
+    radial-gradient(ellipse at 65% 30%, rgba(99, 102, 241, 0.15) 0%, transparent 50%);
+  animation: climate-cool-mist 16s ease-in-out infinite alternate;
+  mix-blend-mode: screen;
+}
+
+.climate-cool::after {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(148, 163, 184, 0.06) 0%, transparent 55%);
+  animation: climate-cool-pulse 10s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+
+@keyframes climate-cool-flow {
+  0%, 100% { filter: brightness(1) saturate(1); }
+  50% { filter: brightness(1.12) saturate(1.2); }
+}
+
+@keyframes climate-cool-mist {
+  0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  100% { transform: translate(6%, -4%) scale(1.08) rotate(2deg); }
+}
+
+@keyframes climate-cool-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+}
+
+/* ─── NORMAL: 55–64°C — Golden Sunlight, Emerald Nature Glow ─── */
+.climate-normal {
+  background:
+    radial-gradient(ellipse at 30% 15%, rgba(16, 185, 129, 0.38) 0%, transparent 45%),
+    radial-gradient(ellipse at 80% 30%, rgba(245, 158, 11, 0.28) 0%, transparent 40%),
+    radial-gradient(ellipse at 50% 75%, rgba(253, 224, 71, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 15% 60%, rgba(52, 211, 153, 0.15) 0%, transparent 35%),
+    linear-gradient(180deg, #031a12 0%, #052215 35%, #071a12 65%, #050b0e 100%);
+  animation: climate-normal-glow 10s ease-in-out infinite;
+}
+
+.climate-normal::before {
+  background:
+    radial-gradient(ellipse at 25% 25%, rgba(245, 158, 11, 0.2) 0%, transparent 45%),
+    radial-gradient(ellipse at 70% 50%, rgba(16, 185, 129, 0.18) 0%, transparent 50%);
+  animation: climate-normal-rays 18s linear infinite;
+  mix-blend-mode: screen;
+}
+
+.climate-normal::after {
+  background: radial-gradient(ellipse at 50% 20%, rgba(253, 224, 71, 0.08) 0%, transparent 55%);
+  animation: climate-normal-warm 8s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+
+@keyframes climate-normal-glow {
+  0%, 100% { filter: brightness(1) saturate(1); }
+  50% { filter: brightness(1.15) saturate(1.25); }
+}
+
+@keyframes climate-normal-rays {
+  0% { transform: rotate(0deg) scale(1); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes climate-normal-warm {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.5; }
+  50% { transform: translate(2%, -3%) scale(1.15); opacity: 0.9; }
+}
+
+/* ─── WARM: 65–74°C — Desert Heat Haze with Molten Amber Shimmer ─── */
+.climate-warm {
+  background:
+    radial-gradient(ellipse at 35% 20%, rgba(251, 146, 60, 0.45) 0%, transparent 40%),
+    radial-gradient(ellipse at 75% 50%, rgba(245, 158, 11, 0.35) 0%, transparent 45%),
+    radial-gradient(ellipse at 25% 75%, rgba(217, 119, 6, 0.2) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 85%, rgba(249, 115, 22, 0.25) 0%, transparent 35%),
+    linear-gradient(180deg, #1a0a02 0%, #221005 30%, #1f0b03 60%, #130802 100%);
+  animation: climate-warm-shimmer 5s ease-in-out infinite;
+}
+
+.climate-warm::before {
+  background:
+    radial-gradient(ellipse at 40% 30%, rgba(251, 146, 60, 0.3) 0%, transparent 45%),
+    radial-gradient(ellipse at 60% 70%, rgba(245, 158, 11, 0.2) 0%, transparent 50%);
+  animation: climate-warm-wave 8s ease-in-out infinite alternate;
+  mix-blend-mode: screen;
+}
+
+.climate-warm::after {
+  background:
+    radial-gradient(ellipse at 50% 90%, rgba(249, 115, 22, 0.2) 0%, transparent 40%),
+    radial-gradient(ellipse at 50% 10%, rgba(217, 119, 6, 0.12) 0%, transparent 35%);
+  animation: climate-warm-distort 4s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+
+@keyframes climate-warm-shimmer {
+  0%, 100% { filter: brightness(1) hue-rotate(0deg); }
+  25% { filter: brightness(1.2) hue-rotate(5deg); }
+  50% { filter: brightness(1.3) hue-rotate(-3deg); }
+  75% { filter: brightness(1.1) hue-rotate(2deg); }
+}
+
+@keyframes climate-warm-wave {
+  0% { transform: translate(0, 0) scale(1) skewY(0deg); }
+  100% { transform: translate(5%, -3%) scale(1.1) skewY(1deg); }
+}
+
+@keyframes climate-warm-distort {
+  0%, 100% { transform: scaleY(1) translateY(0); opacity: 0.6; }
+  50% { transform: scaleY(1.04) translateY(-1%); opacity: 1; }
+}
+
+/* ─── HOT: 75–84°C — Volcanic Magma, Molten Lava Rivers, Furnace Core ─── */
+.climate-hot {
+  background:
+    radial-gradient(ellipse at 50% 85%, rgba(255, 50, 10, 0.5) 0%, transparent 35%),
+    radial-gradient(ellipse at 25% 25%, rgba(249, 115, 22, 0.4) 0%, transparent 40%),
+    radial-gradient(ellipse at 80% 45%, rgba(220, 38, 38, 0.35) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 50%, rgba(185, 28, 28, 0.2) 0%, transparent 55%),
+    radial-gradient(ellipse at 40% 100%, rgba(255, 80, 0, 0.45) 0%, transparent 30%),
+    linear-gradient(180deg, #180406 0%, #220a06 25%, #2a0e08 50%, #1a0508 100%);
+  animation: climate-hot-magma 3s ease-in-out infinite;
+}
+
+.climate-hot::before {
+  background:
+    radial-gradient(ellipse at 30% 80%, rgba(255, 60, 20, 0.35) 0%, transparent 40%),
+    radial-gradient(ellipse at 70% 20%, rgba(249, 115, 22, 0.25) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 50%, rgba(239, 68, 68, 0.2) 0%, transparent 50%);
+  animation: climate-hot-lava 6s ease-in-out infinite alternate;
+  mix-blend-mode: screen;
+}
+
+.climate-hot::after {
+  background:
+    radial-gradient(ellipse at 50% 95%, rgba(255, 120, 0, 0.4) 0%, transparent 30%),
+    radial-gradient(ellipse at 20% 50%, rgba(255, 60, 20, 0.15) 0%, transparent 40%),
+    radial-gradient(ellipse at 80% 60%, rgba(220, 38, 38, 0.15) 0%, transparent 40%);
+  animation: climate-hot-pulse 2s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+
+@keyframes climate-hot-magma {
+  0%, 100% { filter: brightness(1) saturate(1.3); }
+  25% { filter: brightness(1.3) saturate(1.7); }
+  50% { filter: brightness(1.5) saturate(2); }
+  75% { filter: brightness(1.2) saturate(1.5); }
+}
+
+@keyframes climate-hot-lava {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-3%, 4%) scale(1.08); }
+  100% { transform: translate(4%, -2%) scale(1.05); }
+}
+
+@keyframes climate-hot-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.06); opacity: 1; }
+}
+
+/* ─── CRITICAL: ≥ 85°C — Emergency Inferno, Red Alert Strobe ─── */
+.climate-critical {
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(255, 0, 0, 0.55) 0%, transparent 35%),
+    radial-gradient(ellipse at 15% 65%, rgba(239, 68, 68, 0.45) 0%, transparent 40%),
+    radial-gradient(ellipse at 85% 25%, rgba(220, 38, 38, 0.4) 0%, transparent 40%),
+    radial-gradient(ellipse at 50% 100%, rgba(255, 100, 0, 0.5) 0%, transparent 25%),
+    radial-gradient(ellipse at 50% 0%, rgba(255, 0, 0, 0.3) 0%, transparent 30%),
+    linear-gradient(180deg, #250000 0%, #350505 25%, #300202 50%, #200000 100%);
+  animation: climate-critical-blaze 1.5s ease-in-out infinite;
+}
+
+.climate-critical::before {
+  background:
+    radial-gradient(ellipse at 40% 40%, rgba(255, 0, 0, 0.4) 0%, transparent 45%),
+    radial-gradient(ellipse at 60% 60%, rgba(255, 80, 0, 0.35) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 90%, rgba(239, 68, 68, 0.3) 0%, transparent 35%);
+  animation: climate-critical-throb 2s ease-in-out infinite alternate;
+  mix-blend-mode: screen;
+}
+
+.climate-critical::after {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 200, 0.06) 0%, transparent 40%),
+    radial-gradient(circle at 30% 30%, rgba(255, 0, 0, 0.2) 0%, transparent 35%),
+    radial-gradient(circle at 70% 70%, rgba(255, 60, 0, 0.2) 0%, transparent 35%);
+  animation: climate-critical-flash 0.8s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+
+@keyframes climate-critical-blaze {
+  0%, 100% { filter: brightness(1) saturate(1.6); }
+  15% { filter: brightness(1.8) saturate(2.5); }
+  30% { filter: brightness(1.1) saturate(1.8); }
+  50% { filter: brightness(2) saturate(2.8); }
+  70% { filter: brightness(1.2) saturate(1.6); }
+  85% { filter: brightness(1.6) saturate(2.2); }
+}
+
+@keyframes climate-critical-throb {
+  0% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-4%, 3%) scale(1.12); }
+  66% { transform: translate(5%, -4%) scale(1.08); }
+  100% { transform: translate(-2%, 2%) scale(1.15); }
+}
+
+@keyframes climate-critical-flash {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.9; }
+}
+
+/* ─── Animated edge glow for temperature extremes ─── */
+.climate-bg.active.climate-freezing,
+.climate-bg.active.climate-cold {
+  box-shadow:
+    inset 0 0 120px rgba(56, 189, 248, 0.12),
+    inset 0 0 300px rgba(147, 197, 253, 0.05);
+}
+
+.climate-bg.active.climate-hot,
+.climate-bg.active.climate-critical {
+  box-shadow:
+    inset 0 0 120px rgba(255, 60, 20, 0.15),
+    inset 0 0 300px rgba(239, 68, 68, 0.06);
+}

@@ -1,0 +1,31 @@
+{
+  "name": "moodos-laptop-moodswing",
+  "version": "1.0.0",
+  "description": "MoodOS — Laptop MoodSwing System with real-time temperature, Wi-Fi monitoring, climate effects, and voice interaction.",
+  "scripts": {
+    "dev": "concurrently -k -p \"[{name}]\" -n \"BACKEND,FRONTEND\" -c \"cyan,magenta\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "start": "npm run dev",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "desktop": "concurrently -k -p \"[{name}]\" -n \"BACKEND,FRONTEND,ELECTRON\" -c \"cyan,magenta,green\" \"npm run dev:backend\" \"npm run dev:frontend\" \"wait-on http://localhost:3000 && electron electron/main.cjs\"",
+    "app": "concurrently -k -p \"[{name}]\" -n \"BACKEND,FRONTEND,ELECTRON\" -c \"cyan,magenta,green\" \"npm run dev:backend\" \"npm run dev:frontend\" \"wait-on http://localhost:3000 && electron electron/main.cjs\"",
+    "test": "cd backend && npm test"
+  },
+  "keywords": [
+    "laptop",
+    "mood",
+    "monitoring",
+    "react",
+    "express",
+    "climate-effects"
+  ],
+  "author": "Antigravity",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^10.0.5",
+    "cross-env": "^10.1.0",
+    "electron": "^31.4.0",
+    "wait-on": "^9.1.0"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "MoodOS — The Laptop With Feelings",
+  "short_name": "MoodOS",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "description": "An interactive application that gives a laptop an animated mood based on temperature and Wi-Fi signal strength.",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
