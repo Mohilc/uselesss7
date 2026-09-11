@@ -147,13 +147,13 @@ npm test
 ### For Software:
 
 #### Screenshots
-![Screenshot 1: MoodOS Cybernetic Dashboard](https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=1280&q=80)
+![Screenshot 1:https://drive.google.com/file/d/1TtMI_2IEVu_GHJTKZNwA0T3VlVKMcDTf/view?usp=sharing
 *Screenshot 1: The primary MoodOS cyberpunk dashboard displaying real-time CPU thermals, Wi-Fi RSSI gauges, living reactive avatar, and telemetry charts.*
 
-![Screenshot 2: Dynamic Climatic Overlay System](https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1280&q=80)
+![Screenshot 2:https://drive.google.com/file/d/1TtMI_2IEVu_GHJTKZNwA0T3VlVKMcDTf/view?usp=sharing
 *Screenshot 2: Fullscreen climatic simulation mode active with procedural rain effects, temperature threshold alerts, and audio soundscape controls.*
 
-![Screenshot 3: Native Windows Wallpaper Sync & Simulation Deck](https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&w=1280&q=80)
+![Screenshot 3: https://drive.google.com/file/d/1TtMI_2IEVu_GHJTKZNwA0T3VlVKMcDTf/view?usp=sharing
 *Screenshot 3: Simulation drawer allowing manual injection of extreme temperatures (95°C) and Wi-Fi disconnects to test automated Windows wallpaper switching.*
 
 ---
@@ -173,7 +173,7 @@ npm test
 ### Project Demo
 
 #### Video
-- **Demo Video Link:** [Add your demo video link here — YouTube / Google Drive / Loom]
+- **Demo Video Link:**https://drive.google.com/file/d/1TtMI_2IEVu_GHJTKZNwA0T3VlVKMcDTf/view?usp=sharing
 *The demo video walks through: launching MoodOS, live thermal tracking under CPU stress, Wi-Fi disconnection triggering instant depression & rain, procedural audio reaction, and Windows wallpaper changing in real time.*
 
 #### Additional Demos
