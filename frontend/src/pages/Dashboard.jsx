@@ -9,7 +9,7 @@ import {
   Leaf,
   Activity,
   Gauge,
-  Sparkles,
+  Image as ImageIcon,
 } from 'lucide-react';
 import ClimateEffect from '../components/ClimateEffect';
 import LivingAvatar from '../components/LivingAvatar';
@@ -17,11 +17,16 @@ import TelemetryRings from '../components/TelemetryRings';
 import CyberDock from '../components/CyberDock';
 import DesktopTitleBar from '../components/DesktopTitleBar';
 import ScreenWidget from '../components/ScreenWidget';
+import CyberCursor from '../components/CyberCursor';
+import MoodShockwave from '../components/MoodShockwave';
 import {
   fetchSystemData,
   connectTelemetryStream,
   setPersonality,
   setSimulation,
+  setWallpaperAutoSync,
+  fetchWallpaperStatus,
+  applyWindowsWallpaper,
 } from '../services/api';
 import audioSynthesizer from '../services/audioSynthesizer';
 import voiceSynthesizer from '../services/voiceSynthesizer';
@@ -35,6 +40,7 @@ const Dashboard = () => {
   const [volume, setVolume] = useState(35);
   const [zenMode, setZenMode] = useState(false);
   const [lastMoodKey, setLastMoodKey] = useState(null);
+  const [isWallpaperSyncOn, setIsWallpaperSyncOn] = useState(true);
   const [currentMode, setCurrentMode] = useState('dashboard');
   const [fps, setFps] = useState(60);
   const [latencyMs, setLatencyMs] = useState(null);
@@ -87,6 +93,34 @@ const Dashboard = () => {
       return next;
     });
   }, []);
+
+  // Fetch initial wallpaper auto-sync status
+  useEffect(() => {
+    fetchWallpaperStatus()
+      .then((res) => {
+        if (res?.status?.autoSync !== undefined) {
+          setIsWallpaperSyncOn(Boolean(res.status.autoSync));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleToggleWallpaperSync = useCallback(async () => {
+    try {
+      const next = !isWallpaperSyncOn;
+      setIsWallpaperSyncOn(next);
+      await setWallpaperAutoSync(next);
+      if (next && telemetry?.temperature?.temperature != null) {
+        await applyWindowsWallpaper(
+          telemetry?.mood?.moodKey,
+          null,
+          telemetry.temperature.temperature
+        );
+      }
+    } catch (err) {
+      console.error('Failed to toggle wallpaper sync:', err);
+    }
+  }, [isWallpaperSyncOn, telemetry]);
 
   const handleVolumeChange = useCallback((e) => {
     const val = Number(e.target.value);
@@ -279,6 +313,8 @@ const Dashboard = () => {
       <DesktopTitleBar
         currentMode={currentMode}
         onModeChange={handleModeChange}
+        isWallpaperSyncOn={isWallpaperSyncOn}
+        onToggleWallpaperSync={handleToggleWallpaperSync}
         telemetry={telemetry}
       />
 
@@ -306,6 +342,12 @@ const Dashboard = () => {
 
       {/* Dynamic Climate Particle Overlay */}
       <ClimateEffect climate={currentMood.climateEffect} perfMode={perfMode} />
+
+      {/* Atmospheric Energy Shockwave on Mood Shift */}
+      <MoodShockwave moodKey={currentMood.moodKey} timestamp={telemetry?.timestamp} />
+
+      {/* Cybernetic Glow & Stardust Energy Cursor */}
+      <CyberCursor moodKey={currentMood.moodKey} perfMode={perfMode} />
 
       {/* ============================================================
           MAIN APPLICATION INTERFACE
@@ -366,6 +408,21 @@ const Dashboard = () => {
             >
               {perfMode === 'eco' ? <Leaf className="w-3 h-3 text-emerald-400" /> : <Zap className="w-3 h-3 text-amber-400" />}
               <span className="capitalize hidden sm:inline">{perfMode}</span>
+            </button>
+
+            {/* Windows Desktop Wallpaper Sync Button */}
+            <button
+              onClick={handleToggleWallpaperSync}
+              className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border transition-all flex items-center gap-1.5 active:scale-95 ${
+                isWallpaperSyncOn
+                  ? 'bg-amber-500/15 border-amber-400/40 text-amber-300 shadow-sm'
+                  : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+              }`}
+              title={`Windows Desktop Wallpaper Auto-Sync: ${isWallpaperSyncOn ? 'ACTIVE (changes with CPU temperature)' : 'OFF'}`}
+            >
+              <ImageIcon className="w-3 h-3 text-amber-400" />
+              <span className="hidden sm:inline">Wallpaper</span>
+              {isWallpaperSyncOn && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
             </button>
 
             {/* Fullscreen Toggle */}

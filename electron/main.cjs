@@ -239,9 +239,9 @@ ipcMain.on('set-ignore-mouse-events', (_event, ignore, options) => {
   }
 });
 
-ipcMain.handle('apply-windows-wallpaper', async (_event, { moodKey, url }) => {
+ipcMain.handle('apply-windows-wallpaper', async (_event, { moodKey, url, temperature } = {}) => {
   return new Promise((resolve) => {
-    const postData = JSON.stringify({ mood: moodKey, url });
+    const postData = JSON.stringify({ mood: moodKey, url, temperature });
     const req = http.request(
       {
         hostname: 'localhost',

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Volume2, Sparkles, MessageSquare, Flame, Snowflake, Zap, Heart } from 'lucide-react';
+import { Volume2, Sparkles, MessageSquare, Flame, Snowflake, Zap, Heart, Radio } from 'lucide-react';
 import audioSynthesizer from '../services/audioSynthesizer';
 import voiceSynthesizer from '../services/voiceSynthesizer';
 
@@ -123,8 +123,9 @@ const LivingAvatar = ({
   const [isBlinking, setIsBlinking] = useState(false);
   const [isPoked, setIsPoked] = useState(false);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [eyeOffset, setEyeOffset] = useState({ x: 0, y: 0 });
   const [customQuote, setCustomQuote] = useState(null);
-  const [sparkleCount, setSparkleCount] = useState(0);
+  const [pokeParticles, setPokeParticles] = useState([]);
 
   const containerRef = useRef(null);
   const blinkTimerRef = useRef(null);
@@ -142,28 +143,60 @@ const LivingAvatar = ({
     return () => clearTimeout(blinkTimerRef.current);
   }, []);
 
-  // Mouse tilt effect for 3D parallax feel
-  const handleMouseMove = (e) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const x = ((e.clientX - centerX) / (rect.width / 2)) * 12;
-    const y = ((e.clientY - centerY) / (rect.height / 2)) * -12;
-    setTilt({ x: Math.max(-14, Math.min(14, x)), y: Math.max(-14, Math.min(14, y)) });
-  };
+  // Global mouse tracking for eye gaze & 3D tilt
+  useEffect(() => {
+    const handleGlobalMouseMove = (e) => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
 
-  const handleMouseLeave = () => {
-    setTilt({ x: 0, y: 0 });
-  };
+      const normX = (e.clientX - centerX) / (window.innerWidth / 2);
+      const normY = (e.clientY - centerY) / (window.innerHeight / 2);
+
+      // Tilt angle
+      setTilt({
+        x: Math.max(-14, Math.min(14, normX * 14)),
+        y: Math.max(-14, Math.min(14, -normY * 14)),
+      });
+
+      // Pupil gaze offset (clamped to [-3.5, 3.5]px)
+      setEyeOffset({
+        x: Math.max(-3.5, Math.min(3.5, normX * 3.5)),
+        y: Math.max(-3.0, Math.min(3.0, normY * 3.0)),
+      });
+    };
+
+    window.addEventListener('pointermove', handleGlobalMouseMove);
+    return () => window.removeEventListener('pointermove', handleGlobalMouseMove);
+  }, []);
 
   // Interactive "Poke" or Pet
-  const handlePoke = () => {
+  const handlePoke = (e) => {
+    e.stopPropagation();
     setIsPoked(true);
-    setSparkleCount((c) => c + 1);
 
     // Audio chime
     audioSynthesizer.playInteractionChime();
+
+    // Spawn 8-10 floating particle emotes
+    const emojis = moodKey === 'HAPPY' ? ['✨', '💚', '⚡', '⭐'] :
+                   moodKey === 'ANGRY' ? ['🔥', '⚡', '💥', '💢'] :
+                   moodKey === 'COLD'  ? ['❄️', '🧊', '✨', '💎'] :
+                   moodKey === 'EXCITED' ? ['🚀', '🌟', '💖', '⚡'] :
+                   ['✨', '⭐', '💫', '💜'];
+
+    const newParticles = Array.from({ length: 8 }).map((_, i) => ({
+      id: Date.now() + i,
+      emoji: emojis[Math.floor(Math.random() * emojis.length)],
+      x: (Math.random() - 0.5) * 60,
+      y: (Math.random() - 0.5) * 30,
+      vx: (Math.random() - 0.5) * 80,
+      vy: -(40 + Math.random() * 60),
+    }));
+
+    setPokeParticles(newParticles);
+    setTimeout(() => setPokeParticles([]), 900);
 
     // Random dynamic quote
     const quotes = theme.reactionQuotes || ["Hello there!"];
@@ -185,8 +218,6 @@ const LivingAvatar = ({
   return (
     <div
       ref={containerRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
       className="relative flex flex-col items-center justify-center select-none py-2"
     >
       {/* Dynamic Atmospheric Glow behind avatar */}
@@ -259,11 +290,11 @@ const LivingAvatar = ({
           {/* Orbital Satellites */}
           <div
             className="absolute -top-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full shadow-lg"
-            style={{ backgroundColor: theme.primary, boxShadow: `0 0 10px ${theme.primary}` }}
+            style={{ backgroundColor: theme.primary, boxShadow: `0 0 12px ${theme.primary}` }}
           />
           <div
             className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full shadow-lg"
-            style={{ backgroundColor: theme.secondary, boxShadow: `0 0 8px ${theme.secondary}` }}
+            style={{ backgroundColor: theme.secondary, boxShadow: `0 0 10px ${theme.secondary}` }}
           />
         </div>
 
@@ -280,7 +311,7 @@ const LivingAvatar = ({
         <div
           className="absolute -inset-1 rounded-full animate-pulse-ring pointer-events-none"
           style={{
-            boxShadow: `0 0 25px ${theme.glow}`,
+            boxShadow: `0 0 28px ${theme.glow}`,
           }}
         />
 
@@ -290,26 +321,31 @@ const LivingAvatar = ({
           style={{
             background: `radial-gradient(circle at 35% 30%, ${theme.primary}55, #080c16 75%)`,
             border: `2px solid ${theme.primary}80`,
-            boxShadow: `0 0 45px ${theme.glow}, inset 0 0 30px rgba(255,255,255,0.15)`,
+            boxShadow: `0 0 50px ${theme.glow}, inset 0 0 35px rgba(255,255,255,0.18)`,
           }}
         >
           {/* Internal Cyber Grid Lines */}
           <div className="absolute inset-0 opacity-15 pointer-events-none bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:12px_12px]" />
 
           {/* Liquid Glass Specular Shine */}
-          <div className="absolute -top-10 -left-10 w-28 h-28 rounded-full bg-white/20 blur-md pointer-events-none" />
+          <div className="absolute -top-10 -left-10 w-28 h-28 rounded-full bg-white/25 blur-md pointer-events-none" />
 
           {/* Dynamic SVG Animated Facial Expression */}
-          <div className="relative z-10 flex flex-col items-center justify-center">
-            {/* Morphing Eyes */}
+          <div
+            className="relative z-10 flex flex-col items-center justify-center transition-transform duration-200"
+            style={{
+              transform: `translate(${eyeOffset.x * 0.4}px, ${eyeOffset.y * 0.4}px)`,
+            }}
+          >
+            {/* Morphing Eyes with Gaze Tracking */}
             <div className="flex items-center justify-center gap-9 sm:gap-11 mb-2">
               {/* Left Eye */}
-              <div className="transition-all duration-300">
-                {renderEye({ moodKey, isBlinking, theme, side: 'left' })}
+              <div className="transition-all duration-200">
+                {renderEye({ moodKey, isBlinking, theme, side: 'left', eyeOffset })}
               </div>
               {/* Right Eye */}
-              <div className="transition-all duration-300">
-                {renderEye({ moodKey, isBlinking, theme, side: 'right' })}
+              <div className="transition-all duration-200">
+                {renderEye({ moodKey, isBlinking, theme, side: 'right', eyeOffset })}
               </div>
             </div>
 
@@ -336,16 +372,33 @@ const LivingAvatar = ({
             <span className="font-bold tracking-wider">{moodKey}</span>
           </div>
         </div>
+
+        {/* Floating Poke Burst Emotes */}
+        {pokeParticles.map((pt) => (
+          <div
+            key={pt.id}
+            className="absolute pointer-events-none text-xl animate-poke-burst"
+            style={{
+              left: `calc(50% + ${pt.x}px)`,
+              top: `calc(50% + ${pt.y}px)`,
+              '--burst-vx': `${pt.vx}px`,
+              '--burst-vy': `${pt.vy}px`,
+            }}
+          >
+            {pt.emoji}
+          </div>
+        ))}
       </div>
 
       {/* Companion Subtitle Tag */}
       <div className="mt-4 flex items-center gap-2">
         <span
-          className="text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full border shadow-sm backdrop-blur-md"
+          className="text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full border shadow-sm backdrop-blur-md transition-colors duration-500"
           style={{
-            backgroundColor: `${theme.primary}15`,
-            borderColor: `${theme.primary}40`,
+            backgroundColor: `${theme.primary}18`,
+            borderColor: `${theme.primary}45`,
             color: theme.primary,
+            boxShadow: `0 0 15px ${theme.primary}20`,
           }}
         >
           {theme.tag}
@@ -355,8 +408,8 @@ const LivingAvatar = ({
   );
 };
 
-// Helper: Dynamic SVG Eye Rendering
-function renderEye({ moodKey, isBlinking, theme, side }) {
+// Helper: Dynamic SVG Eye Rendering with Gaze Tracking
+function renderEye({ moodKey, isBlinking, theme, side, eyeOffset }) {
   if (isBlinking) {
     return (
       <svg width="24" height="12" viewBox="0 0 24 12" className="overflow-visible">
@@ -367,7 +420,6 @@ function renderEye({ moodKey, isBlinking, theme, side }) {
 
   switch (moodKey) {
     case 'HAPPY':
-      // Happy curved arches ^
       return (
         <svg width="26" height="20" viewBox="0 0 26 20">
           <path
@@ -382,7 +434,6 @@ function renderEye({ moodKey, isBlinking, theme, side }) {
       );
 
     case 'ANGRY':
-      // Angled sharp brows and slit
       return (
         <svg width="24" height="20" viewBox="0 0 24 20">
           <path
@@ -391,41 +442,54 @@ function renderEye({ moodKey, isBlinking, theme, side }) {
             stroke="#ef4444"
             strokeWidth="4.5"
             strokeLinecap="round"
-            style={{ filter: `drop-shadow(0 0 6px rgba(239,68,68,0.8))` }}
+            style={{ filter: `drop-shadow(0 0 7px rgba(239,68,68,0.85))` }}
           />
-          <circle cx="12" cy="14" r="3" fill="#f97316" />
+          <circle
+            cx={12 + eyeOffset.x}
+            cy={14 + eyeOffset.y}
+            r="3.2"
+            fill="#f97316"
+          />
         </svg>
       );
 
     case 'COLD':
-      // Shivering wide eyes with ice glint
       return (
         <div className="relative animate-pulse">
           <div
-            className="w-5 h-6 rounded-full border-2 border-cyan-200 flex items-center justify-center"
+            className="w-5 h-6 rounded-full border-2 border-cyan-200 flex items-center justify-center overflow-hidden"
             style={{
               backgroundColor: `${theme.primary}40`,
-              boxShadow: `0 0 10px ${theme.glow}`,
+              boxShadow: `0 0 12px ${theme.glow}`,
             }}
           >
-            <div className="w-2.5 h-2.5 rounded-full bg-white shadow-sm" />
+            <div
+              className="w-2.5 h-2.5 rounded-full bg-white shadow-sm transition-transform duration-150"
+              style={{
+                transform: `translate(${eyeOffset.x}px, ${eyeOffset.y}px)`,
+              }}
+            />
           </div>
           <Snowflake className="w-2.5 h-2.5 text-cyan-200 absolute -top-1 -right-1" />
         </div>
       );
 
     case 'STRESSED':
-      // Dilated spinning pupils with heat sweat
       return (
         <div className="relative">
           <div
-            className="w-5 h-7 rounded-full border-2 border-amber-300 flex items-center justify-center animate-bounce"
+            className="w-5 h-7 rounded-full border-2 border-amber-300 flex items-center justify-center animate-bounce overflow-hidden"
             style={{
               backgroundColor: `${theme.primary}40`,
-              boxShadow: `0 0 12px ${theme.glow}`,
+              boxShadow: `0 0 14px ${theme.glow}`,
             }}
           >
-            <div className="w-2 h-3.5 rounded-full bg-amber-200" />
+            <div
+              className="w-2 h-3.5 rounded-full bg-amber-200 transition-transform duration-150"
+              style={{
+                transform: `translate(${eyeOffset.x}px, ${eyeOffset.y}px)`,
+              }}
+            />
           </div>
           {side === 'right' && (
             <div className="w-1.5 h-2.5 rounded-full bg-cyan-300 absolute -top-2 right-0 animate-pulse" />
@@ -434,9 +498,16 @@ function renderEye({ moodKey, isBlinking, theme, side }) {
       );
 
     case 'EXCITED':
-      // Starry glowing pupils ★
       return (
-        <svg width="26" height="26" viewBox="0 0 24 24" className="animate-spin-slow">
+        <svg
+          width="26"
+          height="26"
+          viewBox="0 0 24 24"
+          className="animate-spin-slow"
+          style={{
+            transform: `translate(${eyeOffset.x}px, ${eyeOffset.y}px)`,
+          }}
+        >
           <path
             d="M 12,2 L 14.5,8.5 L 21.5,9.5 L 16.5,14 L 18,21 L 12,17.5 L 6,21 L 7.5,14 L 2.5,9.5 L 9.5,8.5 Z"
             fill={theme.primary}
@@ -448,7 +519,6 @@ function renderEye({ moodKey, isBlinking, theme, side }) {
       );
 
     case 'SAD':
-      // Drooping sad eyes with tear drop
       return (
         <div className="relative">
           <svg width="22" height="18" viewBox="0 0 22 18">
@@ -467,13 +537,13 @@ function renderEye({ moodKey, isBlinking, theme, side }) {
       );
 
     case 'LONELY':
-      // Small wistful searching pupil
       return (
         <div
           className="w-4 h-4 rounded-full border border-purple-400 flex items-center justify-center animate-ping"
           style={{
             backgroundColor: `${theme.primary}30`,
             animationDuration: '3s',
+            transform: `translate(${eyeOffset.x}px, ${eyeOffset.y}px)`,
           }}
         >
           <div className="w-1.5 h-1.5 rounded-full bg-white" />
@@ -481,9 +551,16 @@ function renderEye({ moodKey, isBlinking, theme, side }) {
       );
 
     default:
-      // Neutral / Zen: Serene horizontal glow bar
+      // Neutral
       return (
-        <svg width="22" height="12" viewBox="0 0 22 12">
+        <svg
+          width="22"
+          height="12"
+          viewBox="0 0 22 12"
+          style={{
+            transform: `translate(${eyeOffset.x * 0.7}px, ${eyeOffset.y * 0.7}px)`,
+          }}
+        >
           <line
             x1="2"
             y1="6"
@@ -502,7 +579,6 @@ function renderEye({ moodKey, isBlinking, theme, side }) {
 // Helper: Dynamic SVG Mouth
 function renderMouth({ moodKey, theme, isPoked }) {
   if (isPoked) {
-    // Open joyful 'O' mouth on poke
     return (
       <div
         className="w-4 h-4 rounded-full border-2 border-white bg-white/20 animate-pulse"
@@ -514,7 +590,6 @@ function renderMouth({ moodKey, theme, isPoked }) {
   switch (moodKey) {
     case 'HAPPY':
     case 'EXCITED':
-      // Big happy smile curve
       return (
         <svg width="32" height="16" viewBox="0 0 32 16">
           <path
@@ -528,7 +603,6 @@ function renderMouth({ moodKey, theme, isPoked }) {
       );
 
     case 'ANGRY':
-      // Grimace / jagged teeth line
       return (
         <svg width="28" height="12" viewBox="0 0 28 12">
           <path
@@ -542,7 +616,6 @@ function renderMouth({ moodKey, theme, isPoked }) {
       );
 
     case 'COLD':
-      // Chattering teeth zigzag
       return (
         <svg width="26" height="10" viewBox="0 0 26 10">
           <path
@@ -556,7 +629,6 @@ function renderMouth({ moodKey, theme, isPoked }) {
       );
 
     case 'STRESSED':
-      // Wavy overwhelmed mouth
       return (
         <svg width="28" height="12" viewBox="0 0 28 12">
           <path
@@ -570,7 +642,6 @@ function renderMouth({ moodKey, theme, isPoked }) {
       );
 
     case 'SAD':
-      // Downward frown
       return (
         <svg width="24" height="14" viewBox="0 0 24 14">
           <path
@@ -584,7 +655,6 @@ function renderMouth({ moodKey, theme, isPoked }) {
       );
 
     default:
-      // Neutral calm line
       return (
         <div
           className="w-6 h-1 rounded-full transition-all duration-300"

@@ -72,11 +72,11 @@ export const fetchApiDocs = async () => {
   return res.json();
 };
 
-export const applyWindowsWallpaper = async (mood, url) => {
+export const applyWindowsWallpaper = async (mood, url, temperature) => {
   const res = await fetch(`${API_BASE}/wallpaper/apply`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mood, url }),
+    body: JSON.stringify({ mood, url, temperature }),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();

@@ -25,43 +25,43 @@ const CLIMATE_WALLPAPERS = {
     name: 'Arctic Tundra',
     url: 'https://images.unsplash.com/photo-1517299321609-52687d1bc55a?auto=format&fit=crop&w=2560&q=85',
     color: '#03141f',
-    description: 'Glacial ice fields and frozen aurora skies',
+    description: 'Glacial ice fields and frozen aurora skies (≤ 30°C)',
   },
   COLD: {
     name: 'Winter Forest',
     url: 'https://images.unsplash.com/photo-1491002052546-bf38f186af56?auto=format&fit=crop&w=2560&q=85',
     color: '#0a1929',
-    description: 'Snow-blanketed pines under a crisp blue sky',
+    description: 'Snow-blanketed pines under a crisp blue sky (31–44°C)',
   },
   COOL: {
     name: 'Misty Peaks',
     url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=2560&q=85',
     color: '#0f1b2d',
-    description: 'Cool mountain fog rolling through valleys',
+    description: 'Cool mountain fog rolling through valleys (45–54°C)',
   },
   NORMAL: {
     name: 'Golden Meadow',
     url: 'https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=2560&q=85',
     color: '#041f17',
-    description: 'Warm sunlight through green rolling hills',
+    description: 'Warm sunlight through green rolling hills (55–64°C)',
   },
   WARM: {
     name: 'Desert Heat',
     url: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=2560&q=85',
     color: '#1f0b03',
-    description: 'Amber desert dunes shimmering in heat haze',
+    description: 'Amber desert dunes shimmering in heat haze (65–74°C)',
   },
   HOT: {
     name: 'Volcanic Fury',
     url: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&w=2560&q=85',
     color: '#1a0508',
-    description: 'Molten lava flows and volcanic eruptions',
+    description: 'Molten lava flows and volcanic eruptions (75–84°C)',
   },
   CRITICAL: {
     name: 'Inferno',
     url: 'https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&w=2560&q=85',
     color: '#200000',
-    description: 'Blazing wildfire consuming everything in sight',
+    description: 'Blazing wildfire consuming everything in sight (≥ 85°C)',
   },
 };
 
@@ -87,12 +87,14 @@ class WallpaperService {
    * Determine the climate zone from a temperature value (°C).
    */
   getClimateZone(temperature) {
-    if (temperature <= 30) return 'FREEZING';
-    if (temperature <= 44) return 'COLD';
-    if (temperature <= 54) return 'COOL';
-    if (temperature <= 64) return 'NORMAL';
-    if (temperature <= 74) return 'WARM';
-    if (temperature <= 84) return 'HOT';
+    const temp = Number(temperature);
+    if (isNaN(temp)) return 'NORMAL';
+    if (temp <= 30) return 'FREEZING';
+    if (temp <= 44) return 'COLD';
+    if (temp <= 54) return 'COOL';
+    if (temp <= 64) return 'NORMAL';
+    if (temp <= 74) return 'WARM';
+    if (temp <= 84) return 'HOT';
     return 'CRITICAL';
   }
 
@@ -133,13 +135,17 @@ class WallpaperService {
       return filePath;
     } catch (err) {
       console.warn(`[WallpaperService] Download failed for climate zone ${zoneKey}:`, err.message);
+      // If cached file exists despite size, use it
+      if (fs.existsSync(filePath)) {
+        return filePath;
+      }
       return null;
     }
   }
 
   /**
    * Physically set Windows Desktop Wallpaper using PowerShell and Win32 API.
-   * Now accepts temperature to determine the climate zone wallpaper.
+   * Uses Base64 EncodedCommand to ensure flawless execution with no quote/newline bugs.
    */
   async setWindowsWallpaper(moodKey, customUrl = null, temperature = null) {
     if (process.platform !== 'win32') {
@@ -149,10 +155,9 @@ class WallpaperService {
 
     // Determine climate zone from temperature (primary) or fall back to mood mapping
     let zoneKey;
-    if (temperature !== null && temperature !== undefined) {
-      zoneKey = this.getClimateZone(temperature);
+    if (temperature !== null && temperature !== undefined && !isNaN(Number(temperature))) {
+      zoneKey = this.getClimateZone(Number(temperature));
     } else {
-      // Fallback mood → zone mapping for backward compat
       const moodToZone = {
         ANGRY: 'CRITICAL',
         STRESSED: 'HOT',
@@ -183,27 +188,31 @@ class WallpaperService {
         throw new Error('Failed to prepare wallpaper image file on disk');
       }
 
-      // 2. PowerShell script invoking SystemParametersInfo
-      const normalizedPath = filePath.replace(/\\/g, '\\\\');
+      // 2. PowerShell script invoking SystemParametersInfo via Base64 EncodedCommand
+      const escapedPath = filePath.replace(/"/g, '`"');
       const psScript = `
 $code = @'
 using System;
 using System.Runtime.InteropServices;
-public class Wallpaper {
+public class WallpaperHelper {
     [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
     public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
 }
 '@
-Add-Type -TypeDefinition $code
-$result = [Wallpaper]::SystemParametersInfo(0x0014, 0, "${normalizedPath}", 0x01 -bor 0x02)
-Write-Output $result
+Add-Type -TypeDefinition $code -Language CSharp -ErrorAction SilentlyContinue
+[WallpaperHelper]::SystemParametersInfo(0x0014, 0, "${escapedPath}", 0x01 -bor 0x02)
+Write-Output "SUCCESS"
 `;
 
-      const { stdout } = await execAsync(`powershell -NoProfile -Command "${psScript.replace(/\r?\n/g, ' ')}"`, {
-        timeout: 10000,
-      });
+      const b64 = Buffer.from(psScript, 'utf16le').toString('base64');
+      const { stdout } = await execAsync(
+        `powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${b64}`,
+        { timeout: 10000 }
+      );
 
-      console.log(`[WallpaperService] Applied climate wallpaper: ${config.name} (zone: ${zoneKey}, temp: ${temperature}°C)`);
+      console.log(
+        `[WallpaperService] Applied temperature climate wallpaper: ${config.name} (zone: ${zoneKey}, temp: ${temperature !== null ? `${temperature}°C` : 'N/A'})`
+      );
       this.lastAppliedZone = zoneKey;
       return {
         success: true,
@@ -223,24 +232,46 @@ Write-Output $result
   }
 
   /**
-   * Called on telemetry update; updates wallpaper based on temperature climate zone.
-   * Only changes wallpaper when the climate zone actually changes.
+   * Primary handler: Called when temperature changes.
+   * Only changes the Windows desktop wallpaper when crossing climate zones.
    */
-  async handleMoodChange(moodKey, temperature = null) {
-    if (!this.autoSync) return;
+  async handleTemperatureChange(temperature, moodKey = null) {
+    if (!this.autoSync || temperature == null || isNaN(Number(temperature))) return;
 
-    let newZone;
-    if (temperature !== null && temperature !== undefined) {
-      newZone = this.getClimateZone(temperature);
-    } else {
-      // Can't determine zone without temperature, skip
-      return;
-    }
-
+    const newZone = this.getClimateZone(Number(temperature));
     if (newZone === this.lastAppliedZone) return;
 
-    console.log(`[WallpaperService] Temperature ${temperature}°C → Climate zone changed to ${newZone}, syncing wallpaper...`);
-    await this.setWindowsWallpaper(moodKey, null, temperature);
+    console.log(
+      `[WallpaperService] Temperature ${temperature}°C crossed threshold → Zone: ${this.lastAppliedZone || 'INITIAL'} → ${newZone}, updating Windows wallpaper...`
+    );
+    return await this.setWindowsWallpaper(moodKey, null, Number(temperature));
+  }
+
+  /**
+   * Legacy mood change handler for backward compatibility.
+   */
+  async handleMoodChange(moodKey, temperature = null) {
+    if (temperature !== null && temperature !== undefined) {
+      return this.handleTemperatureChange(temperature, moodKey);
+    }
+    if (!this.autoSync) return;
+
+    const moodToZone = {
+      ANGRY: 'CRITICAL',
+      STRESSED: 'HOT',
+      HOT: 'HOT',
+      COLD: 'FREEZING',
+      HAPPY: 'NORMAL',
+      EXCITED: 'COOL',
+      SAD: 'COLD',
+      LONELY: 'COLD',
+      NEUTRAL: 'COOL',
+    };
+    const newZone = moodToZone[(moodKey || 'HAPPY').toUpperCase()] || 'NORMAL';
+    if (newZone === this.lastAppliedZone) return;
+
+    console.log(`[WallpaperService] Mood ${moodKey} → Climate zone changed to ${newZone}, syncing wallpaper...`);
+    return await this.setWindowsWallpaper(moodKey, null, null);
   }
 }
 

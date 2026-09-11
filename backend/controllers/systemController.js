@@ -135,6 +135,19 @@ export const simulate = (req, res) => {
       moodService.setPersonality(personality);
     }
 
+    // Immediately trigger Windows desktop wallpaper sync for the new temperature
+    if (temperature !== undefined && !isNaN(Number(temperature))) {
+      wallpaperService.handleTemperatureChange(Number(temperature)).catch(() => {});
+    } else if (enabled === false) {
+      // Reverting to live hardware temperature
+      const liveData = temperatureService.getTemperatureData();
+      liveData.then((d) => {
+        if (d?.temperature != null) {
+          wallpaperService.handleTemperatureChange(Number(d.temperature)).catch(() => {});
+        }
+      }).catch(() => {});
+    }
+
     res.json({
       success: true,
       message: 'Simulation parameters updated successfully',

@@ -71,7 +71,7 @@ let isStopped = false;
 const runBroadcast = async () => {
   if (isStopped) return;
 
-  if (wss.clients.size > 0 && !isBroadcasting) {
+  if (wss.clients.size > 0 && !isBroadcasting && process.env.NODE_ENV !== 'test') {
     isBroadcasting = true;
     try {
       const [temperature, wifi] = await Promise.all([
@@ -80,26 +80,28 @@ const runBroadcast = async () => {
       ]);
       const mood = moodService.calculateMood(temperature, wifi);
 
-      const message = JSON.stringify({
-        type: 'TELEMETRY_UPDATE',
-        data: {
-          timestamp: Date.now(),
-          temperature,
-          wifi,
-          mood,
-        },
-      });
+      if (wss.clients.size > 0) {
+        const message = JSON.stringify({
+          type: 'TELEMETRY_UPDATE',
+          data: {
+            timestamp: Date.now(),
+            temperature,
+            wifi,
+            mood,
+          },
+        });
 
-      wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(message);
-        }
-      });
+        wss.clients.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(message);
+          }
+        });
+      }
 
-      // Automatically sync Windows desktop wallpaper based on temperature climate zone
-      if (mood && mood.moodKey) {
-        const currentTemp = temperature?.temperature ?? null;
-        wallpaperService.handleMoodChange(mood.moodKey, currentTemp).catch(() => {});
+      // Automatically sync Windows desktop wallpaper based on real-time temperature
+      const currentTemp = temperature?.temperature ?? null;
+      if (currentTemp !== null) {
+        wallpaperService.handleTemperatureChange(currentTemp, mood?.moodKey).catch(() => {});
       }
     } catch (err) {
       // broadcast cycle error

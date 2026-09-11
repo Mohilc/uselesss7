@@ -1,5 +1,67 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { Thermometer, Wifi, WifiOff, Cpu, Zap, Activity, AlertTriangle } from 'lucide-react';
+
+const TiltCard = ({ children, glowColor = '#10b981', className = '' }) => {
+  const cardRef = useRef(null);
+  const [tilt, setTilt] = useState({ rx: 0, ry: 0, px: 50, py: 50 });
+  const [isHovered, setIsHovered] = useState(false);
+
+  const handleMouseMove = (e) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const px = (x / rect.width) * 100;
+    const py = (y / rect.height) * 100;
+    const rx = ((y - rect.height / 2) / (rect.height / 2)) * -6;
+    const ry = ((x - rect.width / 2) / (rect.width / 2)) * 6;
+    setTilt({ rx, ry, px, py });
+  };
+
+  const handleMouseEnter = () => setIsHovered(true);
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    setTilt({ rx: 0, ry: 0, px: 50, py: 50 });
+  };
+
+  return (
+    <div
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className={`glass-panel-interactive rounded-3xl p-5 relative overflow-hidden flex flex-col justify-between shadow-xl transition-transform duration-200 ease-out group ${className}`}
+      style={{
+        transform: `perspective(800px) rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`,
+      }}
+    >
+      {/* Dynamic Specular Lighting Spot following cursor */}
+      {isHovered && (
+        <div
+          className="absolute inset-0 pointer-events-none transition-opacity duration-300 z-0"
+          style={{
+            background: `radial-gradient(circle 180px at ${tilt.px}% ${tilt.py}%, rgba(255,255,255,0.09), transparent 80%)`,
+          }}
+        />
+      )}
+
+      {/* Cybernetic Conic Border Beam */}
+      <div
+        className="absolute -inset-[1px] rounded-3xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0 overflow-hidden"
+        style={{
+          background: `conic-gradient(from 0deg, transparent 0deg, ${glowColor}60 90deg, transparent 180deg)`,
+          animation: 'cyber-spin-slow 8s linear infinite',
+          mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+          maskComposite: 'exclude',
+          WebkitMaskComposite: 'xor',
+          padding: '1px',
+        }}
+      />
+
+      {children}
+    </div>
+  );
+};
 
 const TelemetryRings = ({
   temperatureData,
@@ -63,10 +125,10 @@ const TelemetryRings = ({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
       {/* 1. THERMAL CORE RING HUD */}
-      <div className="glass-panel-interactive rounded-3xl p-5 relative overflow-hidden flex flex-col justify-between shadow-xl">
+      <TiltCard glowColor={tempColor}>
         {/* Ambient background glow */}
         <div
-          className="absolute -top-12 -left-12 w-40 h-40 rounded-full blur-3xl pointer-events-none transition-all duration-700 opacity-20"
+          className="absolute -top-12 -left-12 w-44 h-44 rounded-full blur-3xl pointer-events-none transition-all duration-700 opacity-25"
           style={{ backgroundColor: tempColor }}
         />
 
@@ -145,7 +207,7 @@ const TelemetryRings = ({
                 strokeDasharray={circumference}
                 strokeDashoffset={tempOffset}
                 strokeLinecap="round"
-                style={{ filter: `drop-shadow(0 0 8px ${tempColor}80)` }}
+                style={{ filter: `drop-shadow(0 0 10px ${tempColor}90)` }}
                 className="transition-all duration-700 ease-out"
               />
             </svg>
@@ -174,13 +236,13 @@ const TelemetryRings = ({
             Peak: {tempUnit === 'F' ? Math.round(((temperatureData?.maxTemp || 75) * 9) / 5 + 32) : Math.round(temperatureData?.maxTemp || 75)}{tempUnitSymbol}
           </span>
         </div>
-      </div>
+      </TiltCard>
 
       {/* 2. NEURAL WI-FI RING HUD */}
-      <div className="glass-panel-interactive rounded-3xl p-5 relative overflow-hidden flex flex-col justify-between shadow-xl">
+      <TiltCard glowColor={wifiColor}>
         {/* Ambient background glow */}
         <div
-          className="absolute -top-12 -right-12 w-40 h-40 rounded-full blur-3xl pointer-events-none transition-all duration-700 opacity-20"
+          className="absolute -top-12 -right-12 w-44 h-44 rounded-full blur-3xl pointer-events-none transition-all duration-700 opacity-25"
           style={{ backgroundColor: wifiColor }}
         />
 
@@ -236,7 +298,7 @@ const TelemetryRings = ({
                   cy="70"
                   r="48"
                   fill="none"
-                  stroke="rgba(255, 255, 255, 0.05)"
+                  stroke="rgba(255, 255, 255, 0.06)"
                   strokeWidth="2"
                   strokeDasharray="4 6"
                   className="animate-spin-slow"
@@ -253,7 +315,7 @@ const TelemetryRings = ({
                 strokeDasharray={circumference}
                 strokeDashoffset={wifiOffset}
                 strokeLinecap="round"
-                style={{ filter: `drop-shadow(0 0 8px ${wifiColor}80)` }}
+                style={{ filter: `drop-shadow(0 0 10px ${wifiColor}90)` }}
                 className="transition-all duration-700 ease-out"
               />
             </svg>
@@ -281,7 +343,7 @@ const TelemetryRings = ({
             {connected ? `${linkSpeed} Mbps` : 'Disconnected'}
           </span>
         </div>
-      </div>
+      </TiltCard>
     </div>
   );
 };

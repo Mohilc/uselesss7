@@ -11,6 +11,7 @@ import {
   RotateCcw,
   SlidersHorizontal,
   X,
+  Activity,
 } from 'lucide-react';
 
 const QUICK_EMOTIONS = [
@@ -136,7 +137,7 @@ const CyberDock = ({
                     if (onResetHardware) onResetHardware();
                     setShowSimSliders(false);
                   }}
-                  className="px-3 py-1 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-xs font-semibold flex items-center gap-1.5 transition-all"
+                  className="px-3 py-1 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>Return to Live Hardware</span>
@@ -148,7 +149,7 @@ const CyberDock = ({
       )}
 
       {/* Main Floating Glassmorphic Dock */}
-      <div className="glass-panel rounded-full px-3 py-2 sm:px-4 sm:py-2.5 flex flex-wrap items-center justify-between gap-2 sm:gap-4 shadow-2xl border border-white/15 max-w-4xl w-full">
+      <div className="glass-panel rounded-full px-3 py-2 sm:px-4 sm:py-2.5 flex flex-wrap items-center justify-between gap-2 sm:gap-4 shadow-2xl border border-white/15 max-w-4xl w-full backdrop-blur-xl">
         {/* Emotion Preset Chips */}
         <div className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5">
           <div className="hidden md:flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 mr-1 shrink-0">
@@ -163,8 +164,8 @@ const CyberDock = ({
                 onClick={() => onApplyQuickMood(item)}
                 className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-all flex items-center gap-1 shrink-0 ${
                   isSelected
-                    ? 'bg-indigo-600/50 border-indigo-400 text-white shadow-md shadow-indigo-500/30 scale-105'
-                    : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:border-white/25'
+                    ? 'bg-gradient-to-r from-indigo-600/80 to-purple-600/80 border-white/40 text-white shadow-lg shadow-indigo-500/40 scale-105 ring-2 ring-indigo-400/40'
+                    : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/15 hover:border-white/25 hover:scale-105 active:scale-95'
                 } ${item.color}`}
                 title={`Feel ${item.label} (${item.temp}°C, ${item.wifi}% Wi-Fi)`}
               >
@@ -181,7 +182,7 @@ const CyberDock = ({
           <select
             value={personality}
             onChange={(e) => onPersonalityChange(e.target.value)}
-            className="bg-white/5 border border-white/10 text-slate-200 text-xs rounded-full px-2.5 py-1 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-400 cursor-pointer"
+            className="bg-white/5 border border-white/10 text-slate-200 text-xs rounded-full px-2.5 py-1 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-400 cursor-pointer hover:bg-white/10 transition-colors"
             title="Switch Laptop Persona"
           >
             {PERSONALITIES.map((p) => (
@@ -191,11 +192,11 @@ const CyberDock = ({
             ))}
           </select>
 
-          {/* Sound Synthesizer & Volume */}
-          <div className="flex items-center gap-1 bg-white/5 border border-white/10 px-2 py-1 rounded-full">
+          {/* Sound Synthesizer with Live Audio Visualizer Bars */}
+          <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full hover:border-white/20 transition-all">
             <button
               onClick={onToggleSound}
-              className="text-slate-300 hover:text-white transition-colors"
+              className="text-slate-300 hover:text-white transition-colors active:scale-95"
               title={soundEnabled ? 'Mute Ambient Audio' : 'Play Generative Weather Audio'}
             >
               {soundEnabled ? (
@@ -204,6 +205,16 @@ const CyberDock = ({
                 <VolumeX className="w-3.5 h-3.5 text-slate-400" />
               )}
             </button>
+
+            {/* Live pulsing audio visualizer bars */}
+            {soundEnabled && (
+              <div className="flex items-center gap-0.5 px-0.5">
+                <span className="w-0.5 h-2.5 bg-emerald-400 rounded-full animate-pulse" />
+                <span className="w-0.5 h-3.5 bg-emerald-400 rounded-full animate-bounce" />
+                <span className="w-0.5 h-2 bg-emerald-400 rounded-full animate-pulse" />
+              </div>
+            )}
+
             {soundEnabled && (
               <input
                 type="range"
@@ -220,10 +231,10 @@ const CyberDock = ({
           {/* Voice Commentary Toggle */}
           <button
             onClick={onToggleVoice}
-            className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-all flex items-center gap-1 ${
+            className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-all flex items-center gap-1 active:scale-95 ${
               voiceEnabled
-                ? 'bg-indigo-600/30 border-indigo-400/50 text-indigo-200'
-                : 'bg-white/5 border-white/10 text-slate-400'
+                ? 'bg-indigo-600/40 border-indigo-400/60 text-indigo-200 shadow-sm shadow-indigo-500/20'
+                : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
             }`}
             title="Toggle Voice Speech Synthesis"
           >
@@ -234,9 +245,9 @@ const CyberDock = ({
           {/* Hardware Sliders Toggle */}
           <button
             onClick={() => setShowSimSliders(!showSimSliders)}
-            className={`p-1.5 rounded-full border transition-all ${
+            className={`p-1.5 rounded-full border transition-all active:scale-95 ${
               showSimSliders || isSimulated
-                ? 'bg-amber-500/20 border-amber-400/50 text-amber-300'
+                ? 'bg-amber-500/25 border-amber-400/60 text-amber-300 shadow-sm shadow-amber-500/20'
                 : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
             }`}
             title="Hardware Simulation Sliders"
@@ -247,9 +258,9 @@ const CyberDock = ({
           {/* Zen View Mode Toggle */}
           <button
             onClick={onToggleZenMode}
-            className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-all flex items-center gap-1 ${
+            className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-all flex items-center gap-1 active:scale-95 ${
               zenMode
-                ? 'bg-purple-600/40 border-purple-400/60 text-purple-200 shadow-sm'
+                ? 'bg-purple-600/45 border-purple-400/70 text-purple-200 shadow-sm shadow-purple-500/30'
                 : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
             }`}
             title="Toggle Zen Companion Mode (Hide HUD for pure companion view)"

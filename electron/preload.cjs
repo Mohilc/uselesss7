@@ -21,8 +21,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.send('set-ignore-mouse-events', ignore, options),
 
   // Windows Wallpaper trigger from Electron
-  applyWindowsWallpaper: (moodKey, url) =>
-    ipcRenderer.invoke('apply-windows-wallpaper', { moodKey, url }),
+  applyWindowsWallpaper: (moodKey, url, temperature) =>
+    ipcRenderer.invoke('apply-windows-wallpaper', { moodKey, url, temperature }),
 
   // Listen to events from main process (e.g. tray menu actions)
   onModeChange: (callback) => {
