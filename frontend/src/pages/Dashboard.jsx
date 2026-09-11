@@ -133,44 +133,6 @@ const Dashboard = () => {
     audioSynthesizer.setVolume(val / 100);
   }, []);
 
-  const handleApplyQuickMood = useCallback(async (item) => {
-    try {
-      if (item.climate) {
-        audioSynthesizer.playMoodTransition(item.climate, true);
-      }
-      await setSimulation({
-        enabled: true,
-        temperature: item.temp,
-        wifiSignal: item.wifi,
-        connected: item.wifi > 0,
-      });
-      refreshData();
-    } catch (err) {
-      console.error('Failed to apply quick mood:', err);
-    }
-  }, [refreshData]);
-
-  const handleResetHardware = useCallback(async () => {
-    try {
-      await setSimulation({ enabled: false });
-      refreshData();
-    } catch (err) {
-      console.error('Failed to reset hardware:', err);
-    }
-  }, []);
-
-  const handleSetSimulationValues = useCallback(async (vals) => {
-    try {
-      await setSimulation({
-        enabled: true,
-        ...vals,
-      });
-      refreshData();
-    } catch (err) {
-      console.error('Failed to set simulation:', err);
-    }
-  }, []);
-
   const handleTelemetryUpdate = useCallback((data) => {
     if (data.timestamp) {
       setLatencyMs(Math.max(3, Math.round(Date.now() - data.timestamp)));
@@ -216,6 +178,44 @@ const Dashboard = () => {
       // Graceful offline behavior: will retry on poll/socket
     }
   }, [handleTelemetryUpdate]);
+
+  const handleApplyQuickMood = useCallback(async (item) => {
+    try {
+      if (item.climate) {
+        audioSynthesizer.playMoodTransition(item.climate, true);
+      }
+      await setSimulation({
+        enabled: true,
+        temperature: item.temp,
+        wifiSignal: item.wifi,
+        connected: item.wifi > 0,
+      });
+      refreshData();
+    } catch (err) {
+      console.error('Failed to apply quick mood:', err);
+    }
+  }, [refreshData]);
+
+  const handleResetHardware = useCallback(async () => {
+    try {
+      await setSimulation({ enabled: false });
+      refreshData();
+    } catch (err) {
+      console.error('Failed to reset hardware:', err);
+    }
+  }, [refreshData]);
+
+  const handleSetSimulationValues = useCallback(async (vals) => {
+    try {
+      await setSimulation({
+        enabled: true,
+        ...vals,
+      });
+      refreshData();
+    } catch (err) {
+      console.error('Failed to set simulation:', err);
+    }
+  }, [refreshData]);
 
   useEffect(() => {
     refreshData();
