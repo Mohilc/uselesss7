@@ -2,6 +2,10 @@
 
 # MoodOS: The Laptop With Feelings 💻❤️ 🎯
 
+<p align="center">
+  <img src="assets/cover.jpg" alt="MoodOS: The Laptop With Feelings Cover Banner" width="100%" />
+</p>
+
 > *"Why should your laptop suffer in silence when it can have an existential crisis instead?"*
 
 MoodOS is an emotionally reactive system companion that gives your laptop genuine biological-style "feelings" dictated in real time by your hardware CPU temperature and Wi-Fi signal strength. When your laptop heats up, it throws an apocalyptic fire tantrum and automatically changes your actual Windows desktop wallpaper to volcanic magma. When Wi-Fi drops, it gets depressed, weeps procedural raindrops across your monitor, and complains through audio speech synthesis!
@@ -147,13 +151,13 @@ npm test
 ### For Software:
 
 #### Screenshots
-![Screenshot 1:https://drive.google.com/file/d/1TtMI_2IEVu_GHJTKZNwA0T3VlVKMcDTf/view?usp=sharing
-*Screenshot 1: The primary MoodOS cyberpunk dashboard displaying real-time CPU thermals, Wi-Fi RSSI gauges, living reactive avatar, and telemetry charts.*
+![Screenshot 1: MoodOS Dashboard Preview](assets/cover.jpg)
+*Screenshot 1: The primary MoodOS cyberpunk dashboard displaying real-time CPU thermals, Wi-Fi RSSI gauges, living reactive avatar, and telemetry charts. ([Full Screenshot on Google Drive](https://drive.google.com/file/d/1TtMI_2IEVu_GHJTKZNwA0T3VlVKMcDTf/view?usp=sharing))*
 
-![Screenshot 2:https://drive.google.com/file/d/1TtMI_2IEVu_GHJTKZNwA0T3VlVKMcDTf/view?usp=sharing
+[📁 View Screenshot 2 on Google Drive](https://drive.google.com/file/d/1TtMI_2IEVu_GHJTKZNwA0T3VlVKMcDTf/view?usp=sharing)
 *Screenshot 2: Fullscreen climatic simulation mode active with procedural rain effects, temperature threshold alerts, and audio soundscape controls.*
 
-![Screenshot 3: https://drive.google.com/file/d/1TtMI_2IEVu_GHJTKZNwA0T3VlVKMcDTf/view?usp=sharing
+[📁 View Screenshot 3 on Google Drive](https://drive.google.com/file/d/1TtMI_2IEVu_GHJTKZNwA0T3VlVKMcDTf/view?usp=sharing)
 *Screenshot 3: Simulation drawer allowing manual injection of extreme temperatures (95°C) and Wi-Fi disconnects to test automated Windows wallpaper switching.*
 
 ---
